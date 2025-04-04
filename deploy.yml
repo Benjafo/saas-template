@@ -1,0 +1,169 @@
+---
+# SaaS Template Deployment Playbook
+# This playbook automates the deployment of the SaaS template application
+# with automatic SSL certificate provisioning via Let's Encrypt
+
+- name: Deploy SaaS Template Application
+  hosts: all
+  become: true
+  vars_prompt:
+    - name: domain_name
+      prompt: "Enter your domain name (e.g., example.com)"
+      private: no
+
+    - name: email
+      prompt: "Enter your email address (for Let's Encrypt)"
+      private: no
+
+    - name: stripe_secret_key
+      prompt: "Enter your Stripe Secret Key"
+      private: no
+
+    - name: stripe_webhook_secret
+      prompt: "Enter your Stripe Webhook Secret"
+      private: no
+
+  vars:
+    mongo_username: admin
+    mongo_password: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=16') }}"
+    jwt_secret: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') }}"
+    jwt_expires_in: 90d
+    jwt_cookie_expires_in: 90
+    node_env: production
+    app_dir: "/opt/saas-template"
+    project_dir: "{{ playbook_dir }}"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - python3-pip
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+
+    - name: Install Docker Compose
+      pip:
+        name: docker-compose
+        state: present
+
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create traefik directory
+      file:
+        path: "{{ app_dir }}/traefik"
+        state: directory
+        mode: '0755'
+
+    - name: Create client directory
+      file:
+        path: "{{ app_dir }}/client"
+        state: directory
+        mode: '0755'
+
+    - name: Create server directory
+      file:
+        path: "{{ app_dir }}/server"
+        state: directory
+        mode: '0755'
+
+    - name: Copy client files
+      synchronize:
+        src: "{{ project_dir }}/client/"
+        dest: "{{ app_dir }}/client/"
+        rsync_opts:
+          - "--exclude=node_modules"
+          - "--exclude=build"
+
+    - name: Copy server files
+      synchronize:
+        src: "{{ project_dir }}/server/"
+        dest: "{{ app_dir }}/server/"
+        rsync_opts:
+          - "--exclude=node_modules"
+
+    - name: Create .env file
+      template:
+        src: templates/env.j2
+        dest: "{{ app_dir }}/.env"
+        mode: '0600'
+
+    - name: Create docker-compose.yml
+      template:
+        src: templates/docker-compose.yml.j2
+        dest: "{{ app_dir }}/docker-compose.yml"
+        mode: '0644'
+
+    - name: Create Traefik configuration
+      template:
+        src: templates/traefik.yml.j2
+        dest: "{{ app_dir }}/traefik/traefik.yml"
+        mode: '0644'
+
+    - name: Create empty acme.json file
+      file:
+        path: "{{ app_dir }}/traefik/acme.json"
+        state: touch
+        mode: '0600'
+
+    - name: Create server Dockerfile
+      template:
+        src: templates/server-dockerfile.j2
+        dest: "{{ app_dir }}/server/Dockerfile"
+        mode: '0644'
+
+    - name: Create client Dockerfile
+      template:
+        src: templates/client-dockerfile.j2
+        dest: "{{ app_dir }}/client/Dockerfile"
+        mode: '0644'
+
+    - name: Create Nginx configuration
+      template:
+        src: templates/nginx.conf.j2
+        dest: "{{ app_dir }}/client/nginx.conf"
+        mode: '0644'
+
+    - name: Start the application with Docker Compose
+      community.docker.docker_compose:
+        project_src: "{{ app_dir }}"
+        state: present
+      register: output
+
+    - name: Print deployment information
+      debug:
+        msg:
+          - "Deployment completed successfully!"
+          - "Your application is now running at: https://{{ domain_name }}"
+          - "It may take a few minutes for Let's Encrypt to issue the SSL certificate."
+          - "MongoDB credentials are stored in the .env file."
