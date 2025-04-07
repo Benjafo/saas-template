@@ -14,6 +14,8 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const subscriptionRoutes = require('./routes/subscription.routes');
 const adminRoutes = require('./routes/admin.routes');
+const contactRoutes = require('./routes/contact.routes');
+const configRoutes = require('./routes/config.routes');
 
 // Import middleware
 const { errorHandler } = require('./middleware/error.middleware');
@@ -50,61 +52,101 @@ app.use(cookieParser()); // Added cookie-parser middleware
 
 // Enable CORS with specific options for credentials
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000', // Allow requests from client origin
-  credentials: true // Allow cookies to be sent
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if(!origin) return callback(null, true);
+    
+    // Define allowed origins
+    const allowedOrigins = [
+      process.env.CLIENT_ORIGIN || 'http://localhost:3000',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://client:3000'
+    ];
+    
+    console.log('CORS request from origin:', origin);
+    console.log('Allowed origins:', allowedOrigins);
+    
+    if(allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      console.warn('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Allow cookies to be sent
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Set-Cookie']
 }));
 
 // Connect to database
 const connectDB = require('./config/database');
 connectDB();
 
-// Initialize global seed data if it doesn't exist
-if (!global.seedData) {
-  global.seedData = {
-    activities: [],
-    invoices: []
-  };
-}
-
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', authenticate, userRoutes);
 app.use('/api/v1/subscriptions', authenticate, subscriptionRoutes);
 app.use('/api/v1/admin', authenticate, adminRoutes);
+app.use('/api/v1/contact', contactRoutes);
+app.use('/api/v1/config', configRoutes);
 
-// Add routes to access seed data
-app.get('/api/v1/seed/activities', authenticate, (req, res) => {
-  const userActivities = global.seedData.activities.filter(
-    activity => activity.userId.toString() === req.user.id.toString() || 
-                (req.user.tenantId && activity.tenantId && 
-                 activity.tenantId.toString() === req.user.tenantId.toString())
-  );
-  
-  res.status(200).json({
-    status: 'success',
-    results: userActivities.length,
-    data: {
-      activities: userActivities
-    }
-  });
+// Import models
+const Activity = require('./models/activity.model');
+const Invoice = require('./models/invoice.model');
+const Config = require('./models/config.model');
+
+// Add routes to access data
+app.get('/api/v1/seed/activities', authenticate, async (req, res) => {
+  try {
+    // Find activities for the user or their tenant
+    const activities = await Activity.find({
+      $or: [
+        { userId: req.user.id },
+        { tenantId: req.user.tenantId }
+      ]
+    }).sort({ date: -1 });
+    
+    res.status(200).json({
+      status: 'success',
+      results: activities.length,
+      data: {
+        activities
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching activities',
+      error: err.message
+    });
+  }
 });
 
-app.get('/api/v1/seed/invoices', authenticate, (req, res) => {
-  const userInvoices = global.seedData.invoices.filter(
-    invoice => invoice.userId.toString() === req.user.id.toString()
-  );
-  
-  res.status(200).json({
-    status: 'success',
-    results: userInvoices.length,
-    data: {
-      invoices: userInvoices
-    }
-  });
+app.get('/api/v1/seed/invoices', authenticate, async (req, res) => {
+  try {
+    // Find invoices for the user
+    const invoices = await Invoice.find({ userId: req.user.id }).sort({ date: -1 });
+    
+    res.status(200).json({
+      status: 'success',
+      results: invoices.length,
+      data: {
+        invoices
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching invoices',
+      error: err.message
+    });
+  }
 });
 
-// Admin routes to access all seed data
-app.get('/api/v1/admin/seed/activities', authenticate, (req, res) => {
+// Admin routes to access all data
+app.get('/api/v1/admin/seed/activities', authenticate, async (req, res) => {
   if (req.user.role !== 'admin' && req.user.role !== 'super-admin') {
     return res.status(403).json({
       status: 'error',
@@ -112,16 +154,27 @@ app.get('/api/v1/admin/seed/activities', authenticate, (req, res) => {
     });
   }
   
-  res.status(200).json({
-    status: 'success',
-    results: global.seedData.activities.length,
-    data: {
-      activities: global.seedData.activities
-    }
-  });
+  try {
+    // Get all activities
+    const activities = await Activity.find().sort({ date: -1 });
+    
+    res.status(200).json({
+      status: 'success',
+      results: activities.length,
+      data: {
+        activities
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching activities',
+      error: err.message
+    });
+  }
 });
 
-app.get('/api/v1/admin/seed/invoices', authenticate, (req, res) => {
+app.get('/api/v1/admin/seed/invoices', authenticate, async (req, res) => {
   if (req.user.role !== 'admin' && req.user.role !== 'super-admin') {
     return res.status(403).json({
       status: 'error',
@@ -129,13 +182,52 @@ app.get('/api/v1/admin/seed/invoices', authenticate, (req, res) => {
     });
   }
   
-  res.status(200).json({
-    status: 'success',
-    results: global.seedData.invoices.length,
-    data: {
-      invoices: global.seedData.invoices
+  try {
+    // Get all invoices
+    const invoices = await Invoice.find().sort({ date: -1 });
+    
+    res.status(200).json({
+      status: 'success',
+      results: invoices.length,
+      data: {
+        invoices
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching invoices',
+      error: err.message
+    });
+  }
+});
+
+// Add route to get subscription plans
+app.get('/api/v1/subscription-plans', async (req, res) => {
+  try {
+    // Get subscription plans from config
+    const config = await Config.findOne({ type: 'subscription_plans' });
+    
+    if (!config) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Subscription plans not found'
+      });
     }
-  });
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        plans: config.plans
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching subscription plans',
+      error: err.message
+    });
+  }
 });
 
 // Health check endpoint

@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useState } from 'react';
 
 const ContactPage = () => {
@@ -28,9 +29,8 @@ const ContactPage = () => {
     setSubmitError('');
 
     try {
-      // In a real application, you would send the form data to your backend
-      // For this template, we'll simulate a successful submission after a delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Send the form data to the backend API
+      await axios.post('/api/v1/contact', formData);
       
       setSubmitSuccess(true);
       setFormData({
@@ -42,7 +42,8 @@ const ContactPage = () => {
         message: '',
       });
     } catch (error) {
-      setSubmitError('An error occurred while submitting the form. Please try again.');
+      const errorMessage = error.response?.data?.message || 'An error occurred while submitting the form. Please try again.';
+      setSubmitError(errorMessage);
       console.error('Contact form submission error:', error);
     } finally {
       setIsSubmitting(false);

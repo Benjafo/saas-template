@@ -1,10 +1,10 @@
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  CreditCardIcon,
-  DocumentTextIcon,
-  ServerIcon,
-  UserGroupIcon,
+    ArrowDownIcon,
+    ArrowUpIcon,
+    CreditCardIcon,
+    DocumentTextIcon,
+    ServerIcon,
+    UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -27,7 +27,7 @@ const DashboardPage = () => {
         setLoading(true);
         
         // Fetch user subscription
-        const subscriptionRes = await axios.get('/api/v1/users/subscription');
+        const subscriptionRes = await axios.get('/users/subscription');
         setSubscription(subscriptionRes.data.data.subscription);
         
         let activities = [];
@@ -35,7 +35,7 @@ const DashboardPage = () => {
         
         try {
           // Fetch recent activities
-          const activitiesRes = await axios.get('/api/v1/seed/activities');
+          const activitiesRes = await axios.get('/seed/activities');
           
           // Only take the 5 most recent activities
           activities = activitiesRes.data.data.activities.slice(0, 5);
@@ -46,7 +46,7 @@ const DashboardPage = () => {
         
         try {
           // Fetch invoices
-          const invoicesRes = await axios.get('/api/v1/seed/invoices');
+          const invoicesRes = await axios.get('/seed/invoices');
           invoices = invoicesRes.data.data.invoices;
         } catch (invoiceError) {
           console.warn('Could not fetch invoices:', invoiceError);

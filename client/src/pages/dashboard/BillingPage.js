@@ -51,7 +51,7 @@ const BillingPage = () => {
     {
       name: 'Pro',
       id: 'pro',
-      price: { monthly: '$29', annually: '$290' },
+      price: { monthly: '$29', annually: '$278' },
       features: [
         'Up to 20 users',
         '10 GB storage',
@@ -64,7 +64,7 @@ const BillingPage = () => {
     {
       name: 'Enterprise',
       id: 'enterprise',
-      price: { monthly: '$99', annually: '$990' },
+      price: { monthly: '$99', annually: '$950' },
       features: [
         'Unlimited users',
         '100 GB storage',

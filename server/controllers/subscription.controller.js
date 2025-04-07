@@ -1,75 +1,37 @@
 const User = require('../models/user.model');
 const Tenant = require('../models/tenant.model');
+const Config = require('../models/config.model');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
-// Define subscription plans
-const SUBSCRIPTION_PLANS = {
-  free: {
-    name: 'Free',
-    price: 0,
-    features: {
-      storage: 100, // MB
-      users: 1,
-      customDomain: false,
-      apiAccess: false,
-      whiteLabeling: false,
-      prioritySupport: false
-    },
-    description: 'Basic plan for individuals'
-  },
-  starter: {
-    name: 'Starter',
-    price: 19.99,
-    features: {
-      storage: 5 * 1024, // 5 GB
-      users: 5,
-      customDomain: true,
-      apiAccess: false,
-      whiteLabeling: false,
-      prioritySupport: false
-    },
-    description: 'Perfect for small teams'
-  },
-  professional: {
-    name: 'Professional',
-    price: 49.99,
-    features: {
-      storage: 20 * 1024, // 20 GB
-      users: 20,
-      customDomain: true,
-      apiAccess: true,
-      whiteLabeling: false,
-      prioritySupport: true
-    },
-    description: 'For growing businesses'
-  },
-  enterprise: {
-    name: 'Enterprise',
-    price: 99.99,
-    features: {
-      storage: 100 * 1024, // 100 GB
-      users: 'Unlimited',
-      customDomain: true,
-      apiAccess: true,
-      whiteLabeling: true,
-      prioritySupport: true
-    },
-    description: 'For large organizations'
-  }
-};
 
 /**
  * Get available subscription plans
  * @route GET /api/v1/subscriptions/plans
  * @protected
  */
-exports.getAvailablePlans = (req, res) => {
-  res.status(200).json({
-    status: 'success',
-    data: {
-      plans: SUBSCRIPTION_PLANS
+exports.getAvailablePlans = async (req, res, next) => {
+  try {
+    // Get plans from the database
+    const plansConfig = await Config.findOne({ type: 'subscription_plans' });
+    
+    if (!plansConfig) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Subscription plans not found'
+      });
     }
-  });
+    
+    // Return plans that are active
+    const activePlans = plansConfig.plans.filter(plan => plan.active);
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        plans: activePlans
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 /**
@@ -80,10 +42,20 @@ exports.getAvailablePlans = (req, res) => {
 exports.getCurrentSubscription = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
-
-    // Get plan details
-    const planDetails = SUBSCRIPTION_PLANS[user.subscription.plan];
-
+    
+    // Get plans from the database
+    const plansConfig = await Config.findOne({ type: 'subscription_plans' });
+    
+    if (!plansConfig) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Subscription plans not found'
+      });
+    }
+    
+    // Find the plan that matches the user's subscription
+    const planDetails = plansConfig.plans.find(plan => plan.id === user.subscription.plan);
+    
     res.status(200).json({
       status: 'success',
       data: {
@@ -106,8 +78,21 @@ exports.getCurrentSubscription = async (req, res, next) => {
 exports.createCheckoutSession = async (req, res, next) => {
   try {
     const { plan } = req.body;
-
-    if (!plan || !SUBSCRIPTION_PLANS[plan]) {
+    
+    // Get plans from the database
+    const plansConfig = await Config.findOne({ type: 'subscription_plans' });
+    
+    if (!plansConfig) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Subscription plans not found'
+      });
+    }
+    
+    // Check if the selected plan exists and is active
+    const selectedPlan = plansConfig.plans.find(p => p.id === plan && p.active);
+    
+    if (!selectedPlan) {
       return res.status(400).json({
         status: 'error',
         message: 'Please provide a valid plan'
@@ -157,37 +142,50 @@ exports.createPortalSession = async (req, res, next) => {
 exports.upgradeSubscription = async (req, res, next) => {
   try {
     const { plan } = req.body;
-
-    if (!plan || !SUBSCRIPTION_PLANS[plan]) {
+    
+    // Get plans from the database
+    const plansConfig = await Config.findOne({ type: 'subscription_plans' });
+    
+    if (!plansConfig) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Subscription plans not found'
+      });
+    }
+    
+    // Check if the selected plan exists and is active
+    const selectedPlan = plansConfig.plans.find(p => p.id === plan && p.active);
+    
+    if (!selectedPlan) {
       return res.status(400).json({
         status: 'error',
         message: 'Please provide a valid plan'
       });
     }
-
+    
     const user = await User.findById(req.user.id);
-
+    
     // Check if the plan is an actual upgrade
-    const planHierarchy = ['free', 'starter', 'professional', 'enterprise'];
+    const planHierarchy = ['free', 'pro', 'enterprise'];
     const currentPlanIndex = planHierarchy.indexOf(user.subscription.plan);
     const newPlanIndex = planHierarchy.indexOf(plan);
-
+    
     if (newPlanIndex <= currentPlanIndex) {
       return res.status(400).json({
         status: 'error',
         message: `Cannot upgrade from ${user.subscription.plan} to ${plan}. Please choose a higher tier plan.`
       });
     }
-
+    
     // In a real application, this would interact with Stripe or another payment processor
     // For this template, we'll just update the user's subscription
-
+    
     // Update subscription
     user.subscription.plan = plan;
     user.subscription.status = 'active';
     user.subscription.startDate = Date.now();
     await user.save({ validateBeforeSave: false });
-
+    
     // If user has a tenant, update tenant subscription as well
     if (user.tenantId) {
       const tenant = await Tenant.findById(user.tenantId);
@@ -196,24 +194,36 @@ exports.upgradeSubscription = async (req, res, next) => {
         tenant.subscription.status = 'active';
         tenant.subscription.startDate = Date.now();
         
-        // Update features based on plan
+        // Get features from the selected plan
+        const features = selectedPlan.features.reduce((obj, feature) => {
+          obj[feature.name] = feature.enabled;
+          if (feature.limit !== null) {
+            obj[`${feature.name}Limit`] = feature.limit;
+          }
+          return obj;
+        }, {});
+        
+        // Update features based on plan limits
         tenant.subscription.features = {
-          storage: SUBSCRIPTION_PLANS[plan].features.storage,
-          customDomain: SUBSCRIPTION_PLANS[plan].features.customDomain,
-          apiAccess: SUBSCRIPTION_PLANS[plan].features.apiAccess,
-          whiteLabeling: SUBSCRIPTION_PLANS[plan].features.whiteLabeling,
-          prioritySupport: SUBSCRIPTION_PLANS[plan].features.prioritySupport
+          storage: selectedPlan.limits.storage || 100,
+          customDomain: features.customDomain || false,
+          apiAccess: features.apiAccess || false,
+          whiteLabeling: features.whiteLabeling || false,
+          prioritySupport: features.prioritySupport || false
         };
         
         await tenant.save();
       }
     }
-
+    
+    // Get the full plan details to return
+    const planDetails = plansConfig.plans.find(p => p.id === plan);
+    
     res.status(200).json({
       status: 'success',
       data: {
         subscription: user.subscription,
-        planDetails: SUBSCRIPTION_PLANS[plan]
+        planDetails
       }
     });
   } catch (err) {

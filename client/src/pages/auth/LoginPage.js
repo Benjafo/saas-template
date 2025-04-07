@@ -5,10 +5,14 @@ import * as Yup from 'yup';
 import { useAuth } from '../../context/AuthContext';
 
 const LoginPage = () => {
-  const { login } = useAuth();
+  const { login, loginWithGoogle, loginWithGitHub } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSocialLoading, setIsSocialLoading] = useState({
+    google: false,
+    github: false
+  });
   const [error, setError] = useState('');
 
   // Get the redirect path from location state or default to dashboard
@@ -173,9 +177,27 @@ const LoginPage = () => {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-4">
-              <a
-                href="#"
-                className="flex w-full items-center justify-center gap-3 rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus-visible:ring-transparent"
+              <button
+                type="button"
+                onClick={async () => {
+                  setError('');
+                  setIsSocialLoading(prev => ({ ...prev, google: true }));
+                  try {
+                    const result = await loginWithGoogle();
+                    if (result.success) {
+                      navigate(from, { replace: true });
+                    } else {
+                      setError(result.message);
+                    }
+                  } catch (err) {
+                    setError('An unexpected error occurred. Please try again.');
+                    console.error('Google login error:', err);
+                  } finally {
+                    setIsSocialLoading(prev => ({ ...prev, google: false }));
+                  }
+                }}
+                disabled={isSocialLoading.google}
+                className="flex w-full items-center justify-center gap-3 rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus-visible:ring-transparent disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className="h-5 w-5" aria-hidden="true" viewBox="0 0 24 24">
                   <path
@@ -195,12 +217,32 @@ const LoginPage = () => {
                     fill="#34A853"
                   />
                 </svg>
-                <span className="text-sm font-semibold leading-6">Google</span>
-              </a>
+                <span className="text-sm font-semibold leading-6">
+                  {isSocialLoading.google ? 'Signing in...' : 'Google'}
+                </span>
+              </button>
 
-              <a
-                href="#"
-                className="flex w-full items-center justify-center gap-3 rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus-visible:ring-transparent"
+              <button
+                type="button"
+                onClick={async () => {
+                  setError('');
+                  setIsSocialLoading(prev => ({ ...prev, github: true }));
+                  try {
+                    const result = await loginWithGitHub();
+                    if (result.success) {
+                      navigate(from, { replace: true });
+                    } else {
+                      setError(result.message);
+                    }
+                  } catch (err) {
+                    setError('An unexpected error occurred. Please try again.');
+                    console.error('GitHub login error:', err);
+                  } finally {
+                    setIsSocialLoading(prev => ({ ...prev, github: false }));
+                  }
+                }}
+                disabled={isSocialLoading.github}
+                className="flex w-full items-center justify-center gap-3 rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus-visible:ring-transparent disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className="h-5 w-5 fill-[#24292F] dark:fill-white" aria-hidden="true" viewBox="0 0 20 20">
                   <path
@@ -209,8 +251,10 @@ const LoginPage = () => {
                     clipRule="evenodd"
                   />
                 </svg>
-                <span className="text-sm font-semibold leading-6">GitHub</span>
-              </a>
+                <span className="text-sm font-semibold leading-6">
+                  {isSocialLoading.github ? 'Signing in...' : 'GitHub'}
+                </span>
+              </button>
             </div>
           </div>
         </div>

@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const User = require('./models/user.model');
 const Tenant = require('./models/tenant.model');
+const Activity = require('./models/activity.model');
+const Invoice = require('./models/invoice.model');
+const Config = require('./models/config.model');
 const connectDB = require('./config/database');
 const { faker } = require('@faker-js/faker');
 const readline = require('readline');
@@ -311,6 +314,7 @@ const generateInvoiceData = (users) => {
       
       invoices.push({
         userId: user._id,
+        tenantId: user.tenantId,
         userName: user.name,
         userEmail: user.email,
         amount: basePrice,
@@ -338,6 +342,230 @@ const generateInvoiceData = (users) => {
   return invoices.sort((a, b) => b.date - a.date);
 };
 
+// Helper function to generate subscription plans
+const generateSubscriptionPlans = () => {
+  return {
+    type: 'subscription_plans',
+    plans: [
+      {
+        name: 'Free',
+        id: 'free',
+        description: 'Perfect for individuals and small projects.',
+        price: {
+          monthly: {
+            amount: 0,
+            currency: 'usd',
+            display: '$0'
+          },
+          annually: {
+            amount: 0,
+            currency: 'usd',
+            display: '$0'
+          }
+        },
+        featuresList: [
+          'Up to 5 users',
+          '1 GB storage',
+          'Basic analytics',
+          'Email support',
+          'Community access'
+        ],
+        features: [
+          {
+            name: 'users',
+            description: 'Maximum number of users',
+            limit: 5,
+            limitType: 'count'
+          },
+          {
+            name: 'storage',
+            description: 'Storage space',
+            limit: 1000, // 1 GB in MB
+            limitType: 'storage'
+          },
+          {
+            name: 'analytics',
+            description: 'Basic analytics',
+            enabled: true
+          },
+          {
+            name: 'support',
+            description: 'Email support',
+            enabled: true
+          },
+          {
+            name: 'community',
+            description: 'Community access',
+            enabled: true
+          }
+        ],
+        active: true,
+        mostPopular: false,
+        limits: {
+          users: 5,
+          storage: 1000 // MB
+        }
+      },
+      {
+        name: 'Pro',
+        id: 'pro',
+        description: 'Ideal for growing businesses and teams.',
+        price: {
+          monthly: {
+            amount: 29,
+            currency: 'usd',
+            display: '$29'
+          },
+          annually: {
+            amount: 290,
+            currency: 'usd',
+            display: '$290'
+          }
+        },
+        featuresList: [
+          'Up to 20 users',
+          '10 GB storage',
+          'Advanced analytics',
+          'Priority email support',
+          'API access',
+          'Custom integrations',
+          'Team collaboration tools'
+        ],
+        features: [
+          {
+            name: 'users',
+            description: 'Maximum number of users',
+            limit: 20,
+            limitType: 'count'
+          },
+          {
+            name: 'storage',
+            description: 'Storage space',
+            limit: 10000, // 10 GB in MB
+            limitType: 'storage'
+          },
+          {
+            name: 'analytics',
+            description: 'Advanced analytics',
+            enabled: true
+          },
+          {
+            name: 'support',
+            description: 'Priority email support',
+            enabled: true
+          },
+          {
+            name: 'api',
+            description: 'API access',
+            enabled: true
+          },
+          {
+            name: 'integrations',
+            description: 'Custom integrations',
+            enabled: true
+          },
+          {
+            name: 'collaboration',
+            description: 'Team collaboration tools',
+            enabled: true
+          }
+        ],
+        active: true,
+        mostPopular: true,
+        limits: {
+          users: 20,
+          storage: 10000 // MB
+        }
+      },
+      {
+        name: 'Enterprise',
+        id: 'enterprise',
+        description: 'For large organizations with advanced needs.',
+        price: {
+          monthly: {
+            amount: 99,
+            currency: 'usd',
+            display: '$99'
+          },
+          annually: {
+            amount: 990,
+            currency: 'usd',
+            display: '$990'
+          }
+        },
+        featuresList: [
+          'Unlimited users',
+          '100 GB storage',
+          'Enterprise analytics',
+          '24/7 phone & email support',
+          'Advanced security',
+          'Custom branding',
+          'Dedicated account manager',
+          'Single sign-on (SSO)',
+          'Custom contract'
+        ],
+        features: [
+          {
+            name: 'users',
+            description: 'Maximum number of users',
+            limit: null, // Unlimited
+            limitType: 'count'
+          },
+          {
+            name: 'storage',
+            description: 'Storage space',
+            limit: 100000, // 100 GB in MB
+            limitType: 'storage'
+          },
+          {
+            name: 'analytics',
+            description: 'Enterprise analytics',
+            enabled: true
+          },
+          {
+            name: 'support',
+            description: '24/7 phone & email support',
+            enabled: true
+          },
+          {
+            name: 'security',
+            description: 'Advanced security',
+            enabled: true
+          },
+          {
+            name: 'branding',
+            description: 'Custom branding',
+            enabled: true
+          },
+          {
+            name: 'accountManager',
+            description: 'Dedicated account manager',
+            enabled: true
+          },
+          {
+            name: 'sso',
+            description: 'Single sign-on (SSO)',
+            enabled: true
+          },
+          {
+            name: 'customContract',
+            description: 'Custom contract',
+            enabled: true
+          }
+        ],
+        active: true,
+        mostPopular: false,
+        limits: {
+          users: null, // Unlimited
+          storage: 100000 // MB
+        }
+      }
+    ],
+    active: true,
+    version: 1
+  };
+};
+
 // Main seeding function
 const seedDatabase = async (clearExisting = false) => {
   try {
@@ -358,8 +586,12 @@ const seedDatabase = async (clearExisting = false) => {
         });
       });
       
+      // Delete all data from all collections
       await User.deleteMany({});
       await Tenant.deleteMany({});
+      await Activity.deleteMany({});
+      await Invoice.deleteMany({});
+      await Config.deleteMany({});
       console.log('Existing data cleared');
     }
 
@@ -476,10 +708,10 @@ const seedDatabase = async (clearExisting = false) => {
       }
     }
     
-// Create regular users
-console.log('\nCreating regular users...');
-const userCount = 50; // Increased from 10 to 50 for pagination demo
-const users = [adminUser, superAdminUser];
+    // Create regular users
+    console.log('\nCreating regular users...');
+    const userCount = 50; // Increased from 10 to 50 for pagination demo
+    const users = [adminUser, superAdminUser];
 
     // Create a client user
     const clientEmail = 'client@example.com';
@@ -545,27 +777,42 @@ const users = [adminUser, superAdminUser];
       }
     }
     
-    // Generate activity data
+    // Generate and store subscription plans in the database
+    console.log('\nGenerating subscription plans...');
+    const existingConfig = await Config.findOne({ type: 'subscription_plans' });
+    
+    if (!existingConfig) {
+      const plansConfig = await Config.create(generateSubscriptionPlans());
+      console.log(`Created subscription plans config (${plansConfig.plans.length} plans)`);
+    } else {
+      console.log('Subscription plans already exist in the database');
+    }
+    
+    // Generate and store activity data
     console.log('\nGenerating activity data...');
     const activities = generateActivityData(users, tenants);
     
-    // In a real application, you would store activities in a collection
-    // For this template, we'll just log the count
-    console.log(`Generated ${activities.length} activity records`);
+    // Delete existing activities if clearing data
+    if (clearExisting) {
+      await Activity.deleteMany({});
+    }
     
-    // Generate invoice data
+    // Store activities in the database
+    await Activity.insertMany(activities);
+    console.log(`Generated ${activities.length} activity records and stored in database`);
+    
+    // Generate and store invoice data
     console.log('\nGenerating invoice data...');
     const invoices = generateInvoiceData(users);
     
-    // In a real application, you would store invoices in a collection
-    // For this template, we'll just log the count
-    console.log(`Generated ${invoices.length} invoice records`);
+    // Delete existing invoices if clearing data
+    if (clearExisting) {
+      await Invoice.deleteMany({});
+    }
     
-    // Store the generated data in global variables for the API to use
-    global.seedData = {
-      activities,
-      invoices
-    };
+    // Store invoices in the database
+    await Invoice.insertMany(invoices);
+    console.log(`Generated ${invoices.length} invoice records and stored in database`);
     
     console.log('\nDatabase seeding completed successfully!');
     console.log('\nAdmin user credentials:');

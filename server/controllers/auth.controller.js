@@ -29,8 +29,15 @@ const createSendToken = (user, statusCode, res) => {
     ),
     httpOnly: true, // Prevent XSS attacks
     secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
-    sameSite: 'lax' // Allow cookies to be sent on navigation from external sites
+    sameSite: 'lax', // Use 'lax' for better compatibility
+    path: '/', // Ensure cookie is available on all paths
+    domain: undefined // Let the browser set the domain automatically
   };
+  
+  console.log('Setting cookie with options:', {
+    ...cookieOptions,
+    expires: cookieOptions.expires.toISOString()
+  });
 
   res.cookie('jwt', token, cookieOptions);
 
@@ -308,7 +315,8 @@ exports.logout = (req, res) => {
     expires: new Date(Date.now() + 10 * 1000), // Expire in 10 seconds
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/'
   });
   res.status(200).json({ status: 'success' });
-};
+}

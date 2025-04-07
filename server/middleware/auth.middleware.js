@@ -16,9 +16,14 @@ const authenticate = async (req, res, next) => {
     let token;
     if (req.cookies.jwt) {
       token = req.cookies.jwt;
+      console.log('JWT token found in cookies');
+    } else {
+      console.log('No JWT token found in cookies');
+      console.log('Available cookies:', req.cookies);
     }
 
     if (!token || token === 'loggedout') { // Check for token and the 'loggedout' value set during logout
+      console.log('Authentication failed: No token or logged out token');
       return res.status(401).json({
         status: 'error',
         message: 'You are not logged in. Please log in to get access.'
@@ -26,11 +31,14 @@ const authenticate = async (req, res, next) => {
     }
 
     // 2) Verify token
+    console.log('Verifying JWT token');
     const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+    console.log('JWT token verified, decoded:', { id: decoded.id, iat: decoded.iat });
 
     // 3) Check if user still exists
     const currentUser = await User.findById(decoded.id);
     if (!currentUser) {
+      console.log('Authentication failed: User not found');
       return res.status(401).json({
         status: 'error',
         message: 'The user belonging to this token no longer exists.'
@@ -39,6 +47,7 @@ const authenticate = async (req, res, next) => {
 
     // 4) Check if user changed password after the token was issued
     if (currentUser.changedPasswordAfter(decoded.iat)) {
+      console.log('Authentication failed: Password changed after token issued');
       return res.status(401).json({
         status: 'error',
         message: 'User recently changed password. Please log in again.'
@@ -46,9 +55,11 @@ const authenticate = async (req, res, next) => {
     }
 
     // GRANT ACCESS TO PROTECTED ROUTE
+    console.log('Authentication successful for user:', currentUser.email);
     req.user = currentUser;
     next();
   } catch (err) {
+    console.error('Authentication error:', err);
     next(err);
   }
 };
