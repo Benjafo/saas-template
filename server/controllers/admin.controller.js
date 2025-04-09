@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken');
  * @protected @admin
  */
 exports.getDashboardStats = async (req, res, next) => {
+  console.log('Getting dashboard stats..')
   try {
     // In a real application, this would calculate actual statistics
     // For this template, we'll just return mock data

@@ -1,97 +1,159 @@
-import React, { useState } from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const PricingPage = () => {
   const [annual, setAnnual] = useState(true);
+  const [tiers, setTiers] = useState([]);
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+//   console.log('Pricing page component loaded')
 
-  const tiers = [
-    {
-      name: 'Free',
-      id: 'tier-free',
-      href: '/register',
-      price: { monthly: '$0', annually: '$0' },
-      description: 'Perfect for individuals and small projects.',
-      features: [
-        'Up to 5 users',
-        '1 GB storage',
-        'Basic analytics',
-        'Email support',
-        'Community access',
-      ],
-      mostPopular: false,
-    },
-    {
-      name: 'Pro',
-      id: 'tier-pro',
-      href: '/register?plan=pro',
-      price: { monthly: '$29', annually: '$278' },
-      description: 'Ideal for growing businesses and teams.',
-      features: [
-        'Up to 20 users',
-        '10 GB storage',
-        'Advanced analytics',
-        'Priority email support',
-        'API access',
-        'Custom integrations',
-        'Team collaboration tools',
-      ],
-      mostPopular: true,
-    },
-    {
-      name: 'Enterprise',
-      id: 'tier-enterprise',
-      href: '/register?plan=enterprise',
-      price: { monthly: '$99', annually: '$950' },
-      description: 'For large organizations with advanced needs.',
-      features: [
-        'Unlimited users',
-        '100 GB storage',
-        'Enterprise analytics',
-        '24/7 phone & email support',
-        'API access',
-        'Team collaboration tools',
-        'Advanced security',
-        'Custom branding',
-        'Dedicated account manager',
-        'Single sign-on (SSO)',
-        'Custom contract',
-      ],
-      mostPopular: false,
-    },
-  ];
-
-  const faqs = [
-    {
-      question: 'Can I try before I buy?',
-      answer:
-        'Yes, you can start with our free tier to explore the platform. We also offer a 14-day free trial on all paid plans with no credit card required.',
-    },
-    {
-      question: 'How do I upgrade or downgrade my plan?',
-      answer:
-        'You can change your plan at any time from your account settings. If you upgrade, you\'ll be charged the prorated amount for the remainder of your billing cycle. If you downgrade, you\'ll receive credit towards future bills.',
-    },
-    {
-      question: 'Do you offer discounts for non-profits or educational institutions?',
-      answer:
-        'Yes, we offer special pricing for non-profit organizations, educational institutions, and open-source projects. Please contact our sales team for more information.',
-    },
-    {
-      question: 'What payment methods do you accept?',
-      answer:
-        'We accept all major credit cards (Visa, Mastercard, American Express) and PayPal. For Enterprise plans, we also offer invoicing and bank transfers.',
-    },
-    {
-      question: 'Can I cancel my subscription at any time?',
-      answer:
-        'Yes, you can cancel your subscription at any time from your account settings. Your plan will remain active until the end of your current billing cycle.',
-    },
-    {
-      question: 'Is there a limit to how many projects I can create?',
-      answer:
-        'No, there is no limit to the number of projects you can create on any plan. The main differences between plans are the number of users, storage space, and available features.',
-    },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      console.log('Pricing page loaded, data fetching')
+      try {
+        setLoading(true);
+        
+        // Fetch subscription plans
+        const plansResponse = await axios.get('http://localhost:5000/api/v1/config/subscription-plans');
+        // const plansResponse = await axios.get('http://localhost:5000/api/v1/config/subscription-plans/lalalala');
+        console.log('API response: ', plansResponse)
+        const plans = plansResponse.data.data.plans;
+        
+        // Transform plans data to match the expected format for tiers
+        const formattedTiers = plans.map(plan => ({
+          name: plan.name,
+          id: `tier-${plan.id}`,
+          href: `/register${plan.id !== 'free' ? `?plan=${plan.id}` : ''}`,
+          price: { 
+            monthly: plan.price.monthly.display, 
+            annually: plan.price.annually.display 
+          },
+          description: plan.description,
+          features: plan.featuresList,
+          mostPopular: plan.mostPopular,
+        }));
+        
+        setTiers(formattedTiers);
+        console.log('Tier data loaded from database')
+        
+        // Fetch marketing content (FAQs)
+        const marketingResponse = await axios.get('/config/marketing-content');
+        const marketingContent = marketingResponse.data.data.marketingContent;
+        
+        if (marketingContent && marketingContent.faqs) {
+          setFaqs(marketingContent.faqs);
+        }
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching pricing data:', err);
+        setError('Failed to load pricing information. Please try again later.');
+        setLoading(false);
+        
+        // Fallback to default data if API fails
+        setTiers([
+          {
+            name: 'Broken',
+            id: 'tier-free',
+            href: '/register',
+            price: { monthly: '$0', annually: '$0' },
+            description: 'Something went wrong.',
+            features: [
+              'Oops',
+              'Bad',
+              'Shouldnt be seeing this',
+              'Rats',
+              'Darn it',
+            ],
+            mostPopular: false,
+          },
+        //   {
+        //     name: 'Free',
+        //     id: 'tier-free',
+        //     href: '/register',
+        //     price: { monthly: '$0', annually: '$0' },
+        //     description: 'Perfect for individuals and small projects.',
+        //     features: [
+        //       'Up to 5 users',
+        //       '1 GB storage',
+        //       'Basic analytics',
+        //       'Email support',
+        //       'Community access',
+        //     ],
+        //     mostPopular: false,
+        //   },
+        //   {
+        //     name: 'Pro',
+        //     id: 'tier-pro',
+        //     href: '/register?plan=pro',
+        //     price: { monthly: '$29', annually: '$290' },
+        //     description: 'Ideal for growing businesses and teams.',
+        //     features: [
+        //       'Up to 20 users',
+        //       '10 GB storage',
+        //       'Advanced analytics',
+        //       'Priority email support',
+        //       'API access',
+        //       'Custom integrations',
+        //       'Team collaboration tools',
+        //     ],
+        //     mostPopular: true,
+        //   },
+        //   {
+        //     name: 'Enterprise',
+        //     id: 'tier-enterprise',
+        //     href: '/register?plan=enterprise',
+        //     price: { monthly: '$99', annually: '$990' },
+        //     description: 'For large organizations with advanced needs.',
+        //     features: [
+        //       'Unlimited users',
+        //       '100 GB storage',
+        //       'Enterprise analytics',
+        //       '24/7 phone & email support',
+        //       'Advanced security',
+        //       'Custom branding',
+        //       'Dedicated account manager',
+        //       'Single sign-on (SSO)',
+        //       'Custom contract',
+        //     ],
+        //     mostPopular: false,
+        //   },
+        ]);
+        
+        setFaqs([
+          {
+            question: 'Can I try before I buy?',
+            answer:
+              'Yes, you can start with our free tier to explore the platform. We also offer a 14-day free trial on all paid plans with no credit card required.',
+          },
+          {
+            question: 'How do I upgrade or downgrade my plan?',
+            answer:
+              'You can change your plan at any time from your account settings. If you upgrade, you\'ll be charged the prorated amount for the remainder of your billing cycle. If you downgrade, you\'ll receive credit towards future bills.',
+          },
+          {
+            question: 'Do you offer discounts for non-profits or educational institutions?',
+            answer:
+              'Yes, we offer special pricing for non-profit organizations, educational institutions, and open-source projects. Please contact our sales team for more information.',
+          },
+        ]);
+      }
+    };
+    
+    fetchData();
+  }, []);
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-gray-900">

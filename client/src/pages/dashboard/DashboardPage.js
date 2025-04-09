@@ -20,6 +20,7 @@ const DashboardPage = () => {
   const [activities, setActivities] = useState([]);
   const [subscription, setSubscription] = useState(null);
   const [invoices, setInvoices] = useState([]);
+  const [quickActions, setQuickActions] = useState([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -32,6 +33,7 @@ const DashboardPage = () => {
         
         let activities = [];
         let invoices = [];
+        let actions = [];
         
         try {
           // Fetch recent activities
@@ -53,8 +55,42 @@ const DashboardPage = () => {
           // Continue with empty invoices
         }
         
+        try {
+          // Fetch marketing content for quick actions
+          const marketingRes = await axios.get('/config/marketing-content');
+          const marketingContent = marketingRes.data.data.marketingContent;
+          
+          if (marketingContent && marketingContent.dashboardQuickActions) {
+            actions = marketingContent.dashboardQuickActions;
+          }
+        } catch (marketingError) {
+          console.warn('Could not fetch marketing content:', marketingError);
+          // Set default quick actions if API fails
+          actions = [
+            {
+              title: 'Create Document',
+              description: 'Start a new document from scratch.',
+              icon: 'DocumentTextIcon',
+              action: 'create'
+            },
+            {
+              title: 'Invite Team Member',
+              description: 'Add someone to your workspace.',
+              icon: 'UserGroupIcon',
+              action: 'invite'
+            },
+            {
+              title: 'Upgrade Storage',
+              description: 'Get more space for your files.',
+              icon: 'ServerIcon',
+              action: 'upgrade'
+            }
+          ];
+        }
+        
         setActivities(activities);
         setInvoices(invoices);
+        setQuickActions(actions);
         
         // Generate stats based on the data
         const userSubscription = subscriptionRes.data.data.subscription;
@@ -303,47 +339,39 @@ const DashboardPage = () => {
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">Quick Actions</h3>
           <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-md bg-gray-50 dark:bg-gray-700 px-6 py-5 text-center">
-              <DocumentTextIcon className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">Create Document</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Start a new document from scratch.</p>
-              <div className="mt-4">
-                <a
-                  href="#"
-                  className="inline-flex items-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium leading-4 text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Create
-                </a>
-              </div>
-            </div>
-
-            <div className="rounded-md bg-gray-50 dark:bg-gray-700 px-6 py-5 text-center">
-              <UserGroupIcon className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">Invite Team Member</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Add someone to your workspace.</p>
-              <div className="mt-4">
-                <a
-                  href="#"
-                  className="inline-flex items-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium leading-4 text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Invite
-                </a>
-              </div>
-            </div>
-
-            <div className="rounded-md bg-gray-50 dark:bg-gray-700 px-6 py-5 text-center">
-              <ServerIcon className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">Upgrade Storage</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Get more space for your files.</p>
-              <div className="mt-4">
-                <a
-                  href="#"
-                  className="inline-flex items-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium leading-4 text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Upgrade
-                </a>
-              </div>
-            </div>
+            {quickActions.map((action, index) => {
+              // Map icon string to actual component
+              let IconComponent;
+              switch (action.icon) {
+                case 'DocumentTextIcon':
+                  IconComponent = DocumentTextIcon;
+                  break;
+                case 'UserGroupIcon':
+                  IconComponent = UserGroupIcon;
+                  break;
+                case 'ServerIcon':
+                  IconComponent = ServerIcon;
+                  break;
+                default:
+                  IconComponent = DocumentTextIcon; // Default icon
+              }
+              
+              return (
+                <div key={index} className="rounded-md bg-gray-50 dark:bg-gray-700 px-6 py-5 text-center">
+                  <IconComponent className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">{action.title}</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{action.description}</p>
+                  <div className="mt-4">
+                    <a
+                      href="#"
+                      className="inline-flex items-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium leading-4 text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      {action.action.charAt(0).toUpperCase() + action.action.slice(1)}
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

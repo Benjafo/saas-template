@@ -127,7 +127,7 @@ const configSchema = new mongoose.Schema(
     type: {
       type: String,
       required: [true, 'Config must have a type'],
-      enum: ['subscription_plans', 'email_templates', 'system_settings', 'feature_flags'],
+      enum: ['subscription_plans', 'email_templates', 'system_settings', 'feature_flags', 'marketing_content'],
       unique: true
     },
     plans: [planSchema],
@@ -155,4 +155,4 @@ configSchema.index({ type: 1 }, { unique: true });
 
 const Config = mongoose.model('Config', configSchema);
 
-module.exports = Config; 
+module.exports = Config;

@@ -95,3 +95,32 @@ exports.getSystemSettings = async (req, res, next) => {
     next(err);
   }
 }; 
+
+/**
+ * Get marketing content
+ * @route GET /api/v1/config/marketing-content
+ * @public
+ */
+exports.getMarketingContent = async (req, res, next) => {
+  try {
+    const config = await Config.findOne({ type: 'marketing_content' });
+    
+    if (!config) {
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          marketingContent: {}
+        }
+      });
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        marketingContent: config.settings
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};

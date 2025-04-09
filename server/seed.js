@@ -342,6 +342,69 @@ const generateInvoiceData = (users) => {
   return invoices.sort((a, b) => b.date - a.date);
 };
 
+// Helper function to generate marketing content
+const generateMarketingContent = () => {
+  return {
+    type: 'marketing_content',
+    settings: {
+      faqs: [
+        {
+          question: 'Can I try before I buy?',
+          answer:
+            'Yes, you can start with our free tier to explore the platform. We also offer a 14-day free trial on all paid plans with no credit card required.',
+        },
+        {
+          question: 'How do I upgrade or downgrade my plan?',
+          answer:
+            'You can change your plan at any time from your account settings. If you upgrade, you\'ll be charged the prorated amount for the remainder of your billing cycle. If you downgrade, you\'ll receive credit towards future bills.',
+        },
+        {
+          question: 'Do you offer discounts for non-profits or educational institutions?',
+          answer:
+            'Yes, we offer special pricing for non-profit organizations, educational institutions, and open-source projects. Please contact our sales team for more information.',
+        },
+        {
+          question: 'What payment methods do you accept?',
+          answer:
+            'We accept all major credit cards (Visa, Mastercard, American Express) and PayPal. For Enterprise plans, we also offer invoicing and bank transfers.',
+        },
+        {
+          question: 'Can I cancel my subscription at any time?',
+          answer:
+            'Yes, you can cancel your subscription at any time from your account settings. Your plan will remain active until the end of your current billing cycle.',
+        },
+        {
+          question: 'Is there a limit to how many projects I can create?',
+          answer:
+            'No, there is no limit to the number of projects you can create on any plan. The main differences between plans are the number of users, storage space, and available features.',
+        },
+      ],
+      dashboardQuickActions: [
+        {
+          title: 'Create Document',
+          description: 'Start a new document from scratch.',
+          icon: 'DocumentTextIcon',
+          action: 'create'
+        },
+        {
+          title: 'Invite Team Member',
+          description: 'Add someone to your workspace.',
+          icon: 'UserGroupIcon',
+          action: 'invite'
+        },
+        {
+          title: 'Upgrade Storage',
+          description: 'Get more space for your files.',
+          icon: 'ServerIcon',
+          action: 'upgrade'
+        }
+      ]
+    },
+    active: true,
+    version: 1
+  };
+};
+
 // Helper function to generate subscription plans
 const generateSubscriptionPlans = () => {
   return {
@@ -569,6 +632,7 @@ const generateSubscriptionPlans = () => {
 // Main seeding function
 const seedDatabase = async (clearExisting = false) => {
   try {
+    console.log('Connecting to database')
     await connectDB();
     console.log('Database connected successfully');
 
@@ -779,13 +843,24 @@ const seedDatabase = async (clearExisting = false) => {
     
     // Generate and store subscription plans in the database
     console.log('\nGenerating subscription plans...');
-    const existingConfig = await Config.findOne({ type: 'subscription_plans' });
+    const existingPlansConfig = await Config.findOne({ type: 'subscription_plans' });
     
-    if (!existingConfig) {
+    if (!existingPlansConfig) {
       const plansConfig = await Config.create(generateSubscriptionPlans());
       console.log(`Created subscription plans config (${plansConfig.plans.length} plans)`);
     } else {
       console.log('Subscription plans already exist in the database');
+    }
+    
+    // Generate and store marketing content in the database
+    console.log('\nGenerating marketing content...');
+    const existingMarketingConfig = await Config.findOne({ type: 'marketing_content' });
+    
+    if (!existingMarketingConfig) {
+      const marketingConfig = await Config.create(generateMarketingContent());
+      console.log('Created marketing content config');
+    } else {
+      console.log('Marketing content already exists in the database');
     }
     
     // Generate and store activity data

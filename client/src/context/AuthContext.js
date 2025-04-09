@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
   // Set the base URL for API requests
   useEffect(() => {
     // Use the environment variable or fallback to a default
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
     console.log('API URL:', apiUrl);
     axios.defaults.baseURL = apiUrl;
     

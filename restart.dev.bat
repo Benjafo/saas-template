@@ -6,14 +6,9 @@ echo ====================================
 docker-compose down
 
 echo ===========================
-echo === Building containers ===
+echo === Building and running containers in development mode ===
 echo ===========================
-docker-compose build
-
-echo ==========================
-echo === Running containers ===
-echo ==========================
-docker-compose up -d
+docker-compose -f docker-compose.dev.yml up --build
 
 echo =====================
 echo === Watching logs ===

@@ -6,6 +6,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/subscription-plans', configController.getSubscriptionPlans);
+router.get('/marketing-content', configController.getMarketingContent);
 
 // Protected routes
 router.get('/feature-flags', authenticate, configController.getFeatureFlags);
@@ -13,4 +14,4 @@ router.get('/feature-flags', authenticate, configController.getFeatureFlags);
 // Admin routes
 router.get('/system-settings', authenticate, configController.getSystemSettings);
 
-module.exports = router; 
+module.exports = router;

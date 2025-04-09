@@ -1,4 +1,4 @@
-FROM node:18-alpine as build
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ COPY . .
 
 # Set environment variables for build
 ARG REACT_APP_API_URL
-ENV REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:5000/api/v1}
+ENV REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:5000}
 
 # Build the app
 RUN npm run build

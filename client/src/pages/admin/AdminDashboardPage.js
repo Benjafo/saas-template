@@ -20,7 +20,8 @@ const AdminDashboardPage = () => {
         
         try {
           // Fetch dashboard stats
-          const statsRes = await axios.get('/api/v1/admin/stats');
+          const statsRes = await axios.get('/admin/stats');
+        //   console.log(`Request: ${statsRes}`)
           dashboardStats = statsRes.data.data;
           setDashboardStats(dashboardStats);
         } catch (statsError) {
@@ -30,7 +31,7 @@ const AdminDashboardPage = () => {
         
         try {
           // Fetch users
-          const usersRes = await axios.get('/api/v1/admin/users');
+          const usersRes = await axios.get('/admin/users');
           
           // Only take the 5 most recent users
           const sortedUsers = usersRes.data.data.users

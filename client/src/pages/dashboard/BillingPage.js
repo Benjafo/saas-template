@@ -1,81 +1,175 @@
-import React, { useState } from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const BillingPage = () => {
-  const [currentPlan] = useState('pro'); // This would come from your API in a real app
+  const { user } = useAuth();
+  const [currentPlan, setCurrentPlan] = useState('');
   const [billingCycle, setBillingCycle] = useState('monthly');
-  const [paymentMethod] = useState({
+  const [paymentMethod, setPaymentMethod] = useState({
     type: 'card',
     last4: '4242',
     expiry: '04/25',
     brand: 'Visa',
   });
-  
-  const [invoices] = useState([
-    {
-      id: 'INV-2025-001',
-      date: 'Mar 1, 2025',
-      amount: '$29.00',
-      status: 'Paid',
-      downloadUrl: '#',
-    },
-    {
-      id: 'INV-2025-002',
-      date: 'Feb 1, 2025',
-      amount: '$29.00',
-      status: 'Paid',
-      downloadUrl: '#',
-    },
-    {
-      id: 'INV-2025-003',
-      date: 'Jan 1, 2025',
-      amount: '$29.00',
-      status: 'Paid',
-      downloadUrl: '#',
-    },
-  ]);
+  const [invoices, setInvoices] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const plans = [
-    {
-      name: 'Free',
-      id: 'free',
-      price: { monthly: '$0', annually: '$0' },
-      features: [
-        'Up to 5 users',
-        '1 GB storage',
-        'Basic analytics',
-        'Email support',
-      ],
-      current: currentPlan === 'free',
-    },
-    {
-      name: 'Pro',
-      id: 'pro',
-      price: { monthly: '$29', annually: '$278' },
-      features: [
-        'Up to 20 users',
-        '10 GB storage',
-        'Advanced analytics',
-        'Priority email support',
-        'API access',
-      ],
-      current: currentPlan === 'pro',
-    },
-    {
-      name: 'Enterprise',
-      id: 'enterprise',
-      price: { monthly: '$99', annually: '$950' },
-      features: [
-        'Unlimited users',
-        '100 GB storage',
-        'Enterprise analytics',
-        '24/7 phone & email support',
-        'Advanced security',
-        'Custom branding',
-      ],
-      current: currentPlan === 'enterprise',
-    },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch user subscription to get current plan
+        const userSubscriptionRes = await axios.get('/users/subscription');
+        const userSubscription = userSubscriptionRes.data.data.subscription;
+        setCurrentPlan(userSubscription?.plan || 'free');
+        
+        // Fetch subscription plans
+        const plansResponse = await axios.get('/config/subscription-plans');
+        const plansData = plansResponse.data.data.plans;
+        
+        // Transform plans data to match the expected format
+        const formattedPlans = plansData.map(plan => ({
+          name: plan.name,
+          id: plan.id,
+          price: { 
+            monthly: plan.price.monthly.display, 
+            annually: plan.price.annually.display 
+          },
+          features: plan.featuresList.slice(0, 6), // Limit to 6 features for display
+          current: userSubscription?.plan === plan.id,
+        }));
+        
+        setPlans(formattedPlans);
+        
+        // Fetch invoices
+        try {
+          const invoicesRes = await axios.get('/seed/invoices');
+          const invoicesData = invoicesRes.data.data.invoices;
+          
+          // Format invoices for display
+          const formattedInvoices = invoicesData.slice(0, 3).map(invoice => ({
+            id: invoice.invoiceNumber,
+            date: new Date(invoice.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            amount: `$${invoice.amount.toFixed(2)}`,
+            status: invoice.status === 'paid' ? 'Paid' : 'Unpaid',
+            downloadUrl: '#',
+          }));
+          
+          setInvoices(formattedInvoices);
+        } catch (invoiceError) {
+          console.warn('Could not fetch invoices:', invoiceError);
+          // Use default invoices if API fails
+          setInvoices([
+            {
+              id: 'INV-2025-001',
+              date: 'Mar 1, 2025',
+              amount: '$29.00',
+              status: 'Paid',
+              downloadUrl: '#',
+            },
+            {
+              id: 'INV-2025-002',
+              date: 'Feb 1, 2025',
+              amount: '$29.00',
+              status: 'Paid',
+              downloadUrl: '#',
+            },
+            {
+              id: 'INV-2025-003',
+              date: 'Jan 1, 2025',
+              amount: '$29.00',
+              status: 'Paid',
+              downloadUrl: '#',
+            },
+          ]);
+        }
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching billing data:', err);
+        setError('Failed to load billing information. Please try again later.');
+        setLoading(false);
+        
+        // Fallback to default data if API fails
+        setPlans([
+          {
+            name: 'Free',
+            id: 'free',
+            price: { monthly: '$0', annually: '$0' },
+            features: [
+              'Up to 5 users',
+              '1 GB storage',
+              'Basic analytics',
+              'Email support',
+            ],
+            current: currentPlan === 'free',
+          },
+          {
+            name: 'Pro',
+            id: 'pro',
+            price: { monthly: '$29', annually: '$290' },
+            features: [
+              'Up to 20 users',
+              '10 GB storage',
+              'Advanced analytics',
+              'Priority email support',
+              'API access',
+            ],
+            current: currentPlan === 'pro',
+          },
+          {
+            name: 'Enterprise',
+            id: 'enterprise',
+            price: { monthly: '$99', annually: '$990' },
+            features: [
+              'Unlimited users',
+              '100 GB storage',
+              'Enterprise analytics',
+              '24/7 phone & email support',
+              'Advanced security',
+              'Custom branding',
+            ],
+            current: currentPlan === 'enterprise',
+          },
+        ]);
+      }
+    };
+    
+    fetchData();
+  }, []);
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="bg-red-50 dark:bg-red-900 p-4 rounded-md">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Error</h3>
+            <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+              <p>{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-10">

@@ -55,7 +55,7 @@ app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps, curl requests)
     if(!origin) return callback(null, true);
-    
+
     // Define allowed origins
     const allowedOrigins = [
       process.env.CLIENT_ORIGIN || 'http://localhost:3000',

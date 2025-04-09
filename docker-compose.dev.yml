@@ -7,10 +7,7 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME:-admin}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-password123}
-
-      # Hot reload
       - CHOKIDAR_USEPOLLING=true
-      
     ports:
       - "27017:27017"
 
@@ -20,7 +17,7 @@ services:
     depends_on:
       - mongodb
     environment:
-      - NODE_ENV=${NODE_ENV:-development}
+      - NODE_ENV=development
       - PORT=5000
       - DATABASE_URI=mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password123}@mongodb:27017/saas-template?authSource=admin
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_at_least_32_characters_long}
@@ -30,26 +27,31 @@ services:
       - CLIENT_ORIGIN=http://localhost:3000
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-change_this_password_immediately}
-
-      # Hot reload
       - CHOKIDAR_USEPOLLING=true
-
     ports:
       - "5000:5000"
     volumes:
       - ./server:/app
       - /app/node_modules
+    command: npm run dev
 
   client:
     build:
       context: ./client
-      args:
-        - REACT_APP_API_URL=http://localhost:5000/api/v1
+      dockerfile: Dockerfile.dev
     restart: always
     depends_on:
       - server
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000/api/v1
+      - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=0
     ports:
       - "3000:3000"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    stdin_open: true
 
 volumes:
   mongo_data:
