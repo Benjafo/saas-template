@@ -18,4 +18,4 @@ docker-compose up -d
 echo =====================
 echo === Watching logs ===
 echo =====================
-docker-compose logs -f client
+docker-compose logs -f client server

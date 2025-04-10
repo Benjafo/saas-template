@@ -1,7 +1,7 @@
-import axios from 'axios';
 import { format } from 'date-fns';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import apiClient from '../../utils/api';
 
 const AdminDashboardPage = () => {
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,7 @@ const AdminDashboardPage = () => {
         
         try {
           // Fetch dashboard stats
-          const statsRes = await axios.get('/admin/stats');
+          const statsRes = await apiClient.get('/admin/stats');
         //   console.log(`Request: ${statsRes}`)
           dashboardStats = statsRes.data.data;
           setDashboardStats(dashboardStats);
@@ -31,7 +31,7 @@ const AdminDashboardPage = () => {
         
         try {
           // Fetch users
-          const usersRes = await axios.get('/admin/users');
+          const usersRes = await apiClient.get('/admin/users');
           
           // Only take the 5 most recent users
           const sortedUsers = usersRes.data.data.users
@@ -53,33 +53,82 @@ const AdminDashboardPage = () => {
         
         setRecentUsers(users);
         
+        // Try to fetch dashboard content for admin stats
+        let adminStats = null;
+        try {
+          const dashboardContentRes = await apiClient.get('/config/dashboard-content');
+          const dashboardContent = dashboardContentRes.data.data.dashboardContent;
+          
+          if (dashboardContent && dashboardContent.adminStats) {
+            adminStats = dashboardContent.adminStats;
+          }
+        } catch (dashboardContentError) {
+          console.warn('Could not fetch dashboard content:', dashboardContentError);
+          // Continue with default stats
+        }
+        
         // Generate stats based on the data
-        const statsData = [
-          { 
-            name: 'Total Users', 
-            value: dashboardStats?.users?.total?.toLocaleString() || '0', 
-            change: `+${dashboardStats?.users?.growth || 0}%`, 
-            changeType: 'increase' 
-          },
-          { 
-            name: 'Active Tenants', 
-            value: dashboardStats?.tenants?.active?.toLocaleString() || '0', 
-            change: `+${dashboardStats?.tenants?.growth || 0}%`, 
-            changeType: 'increase' 
-          },
-          { 
-            name: 'Revenue (MTD)', 
-            value: `$${dashboardStats?.revenue?.monthly?.toLocaleString() || '0'}`, 
-            change: `+${dashboardStats?.revenue?.growth || 0}%`, 
-            changeType: 'increase' 
-          },
-          { 
-            name: 'Churn Rate', 
-            value: '3.2%', 
-            change: '-0.4%', 
-            changeType: 'decrease' 
-          },
-        ];
+        let statsData = [];
+        
+        if (adminStats) {
+          // Use admin stats from dashboard content
+          statsData = adminStats.map(stat => {
+            // For stats that have real data from the API, use that data
+            if (stat.name === 'Total Users' && dashboardStats?.users?.total) {
+              return {
+                ...stat,
+                value: dashboardStats.users.total.toLocaleString(),
+                change: `+${dashboardStats.users.growth || 0}%`
+              };
+            }
+            
+            if (stat.name === 'Active Tenants' && dashboardStats?.tenants?.active) {
+              return {
+                ...stat,
+                value: dashboardStats.tenants.active.toLocaleString(),
+                change: `+${dashboardStats.tenants.growth || 0}%`
+              };
+            }
+            
+            if (stat.name === 'Revenue (MTD)' && dashboardStats?.revenue?.monthly) {
+              return {
+                ...stat,
+                value: `$${dashboardStats.revenue.monthly.toLocaleString()}`,
+                change: `+${dashboardStats.revenue.growth || 0}%`
+              };
+            }
+            
+            return stat;
+          });
+        } else {
+          // Use default stats with real data where available
+          statsData = [
+            { 
+              name: 'Total Users', 
+              value: dashboardStats?.users?.total?.toLocaleString() || '0', 
+              change: `+${dashboardStats?.users?.growth || 0}%`, 
+              changeType: 'increase' 
+            },
+            { 
+              name: 'Active Tenants', 
+              value: dashboardStats?.tenants?.active?.toLocaleString() || '0', 
+              change: `+${dashboardStats?.tenants?.growth || 0}%`, 
+              changeType: 'increase' 
+            },
+            { 
+              name: 'Revenue (MTD)', 
+              value: `$${dashboardStats?.revenue?.monthly?.toLocaleString() || '0'}`, 
+              change: `+${dashboardStats?.revenue?.growth || 0}%`, 
+              changeType: 'increase' 
+            },
+            { 
+              name: 'Churn Rate', 
+              value: '3.2%', 
+              change: '-0.4%', 
+              changeType: 'decrease' 
+            },
+          ];
+        }
         
         setStats(statsData);
         setLoading(false);

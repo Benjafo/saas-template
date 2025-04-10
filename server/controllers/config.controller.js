@@ -124,3 +124,61 @@ exports.getMarketingContent = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * Get homepage content
+ * @route GET /api/v1/config/homepage-content
+ * @public
+ */
+exports.getHomepageContent = async (req, res, next) => {
+  try {
+    const config = await Config.findOne({ type: 'homepage_content' });
+    
+    if (!config) {
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          homepageContent: {}
+        }
+      });
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        homepageContent: config.settings
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Get dashboard content
+ * @route GET /api/v1/config/dashboard-content
+ * @public
+ */
+exports.getDashboardContent = async (req, res, next) => {
+  try {
+    const config = await Config.findOne({ type: 'dashboard_content' });
+    
+    if (!config) {
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          dashboardContent: {}
+        }
+      });
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        dashboardContent: config.settings
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};

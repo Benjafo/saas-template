@@ -13,7 +13,7 @@ COPY . .
 
 # Set environment variables for build
 ARG REACT_APP_API_URL
-ENV REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:5000}
+ENV REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:5000/api/v1}
 
 # Build the app
 RUN npm run build

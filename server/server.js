@@ -5,6 +5,9 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser'); // Added cookie-parser
+const mongoose = require('mongoose');
+
+console.log('Running app')
 
 // Load environment variables
 dotenv.config({ path: './config/.env' });
@@ -24,11 +27,47 @@ const { authenticate } = require('./middleware/auth.middleware');
 // Create Express app
 const app = express();
 
+// Enable CORS with specific options for credentials
+app.use(cors({
+      origin: function(origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl requests)
+        if(!origin) return callback(null, true);
+    
+        // Define allowed origins
+        const allowedOrigins = [
+          process.env.CLIENT_ORIGIN || 'http://localhost:3000',
+          'http://localhost:3000',
+          'http://127.0.0.1:3000',
+          'http://client:3000'
+        ];
+        
+        console.log('CORS request from origin:', origin);
+        console.log('Allowed origins:', allowedOrigins);
+        
+        if(allowedOrigins.indexOf(origin) !== -1 || !origin) {
+          callback(null, true);
+        } else {
+          console.warn('CORS blocked origin:', origin);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+    //   origin: function(origin, callback) {
+    //     // Allow all origins for development
+    //     return callback(null, true);
+    //   },
+      credentials: true, // Allow cookies to be sent
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      exposedHeaders: ['Set-Cookie']
+    }));
+
 // Trust proxy - needed for express-rate-limit behind a proxy
 app.set('trust proxy', 1);
 
 // Set security HTTP headers
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: false
+  }));
 
 // Development logging
 if (process.env.NODE_ENV === 'development') {
@@ -50,39 +89,15 @@ app.use(express.json({ limit: '10kb' }));
 // Cookie parser
 app.use(cookieParser()); // Added cookie-parser middleware
 
-// Enable CORS with specific options for credentials
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl requests)
-    if(!origin) return callback(null, true);
-
-    // Define allowed origins
-    const allowedOrigins = [
-      process.env.CLIENT_ORIGIN || 'http://localhost:3000',
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://client:3000'
-    ];
-    
-    console.log('CORS request from origin:', origin);
-    console.log('Allowed origins:', allowedOrigins);
-    
-    if(allowedOrigins.indexOf(origin) !== -1 || !origin) {
-      callback(null, true);
-    } else {
-      console.warn('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true, // Allow cookies to be sent
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Set-Cookie']
-}));
+console.log('Running app');
 
 // Connect to database
 const connectDB = require('./config/database');
-connectDB();
+// Try to connect to the database, but don't stop the server if it fails
+const dbConnection = connectDB().catch(err => {
+  console.error('Failed to establish initial database connection:', err.message);
+  // We'll continue running the server even if the initial DB connection fails
+});
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
@@ -91,6 +106,21 @@ app.use('/api/v1/subscriptions', authenticate, subscriptionRoutes);
 app.use('/api/v1/admin', authenticate, adminRoutes);
 app.use('/api/v1/contact', contactRoutes);
 app.use('/api/v1/config', configRoutes);
+
+// Test route
+app.get('/api/v1/test', (req, res) => {
+    res.status(200).json({'Success': 'The API is working'})
+})
+
+// Database status route
+app.get('/api/v1/db-status', (req, res) => {
+  const isConnected = mongoose.connection.readyState === 1;
+  res.status(200).json({
+    'status': isConnected ? 'connected' : 'disconnected',
+    'readyState': mongoose.connection.readyState,
+    'host': mongoose.connection.host || 'not connected'
+  });
+})
 
 // Import models
 const Activity = require('./models/activity.model');
@@ -254,7 +284,20 @@ app.listen(PORT, () => {
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.log('UNHANDLED REJECTION! 💥 Shutting down...');
+  console.log('UNHANDLED REJECTION! 💥');
   console.log(err.name, err.message);
-  process.exit(1);
+  console.log(err.stack);
+  // Instead of exiting, we'll log the error and continue
+  // This prevents the server from crashing on unhandled promise rejections
+  // process.exit(1);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.log('UNCAUGHT EXCEPTION! 💥');
+  console.log(err.name, err.message);
+  console.log(err.stack);
+  // Instead of exiting, we'll log the error and continue
+  // This prevents the server from crashing on uncaught exceptions
+  // process.exit(1);
 });

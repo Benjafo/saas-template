@@ -5,7 +5,7 @@ import * as Yup from 'yup';
 import { useAuth } from '../../context/AuthContext';
 
 const LoginPage = () => {
-  const { login, loginWithGoogle, loginWithGitHub } = useAuth();
+  const { login, loginWithGoogle, loginWithGitHub, testApiConnection } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
@@ -14,9 +14,30 @@ const LoginPage = () => {
     github: false
   });
   const [error, setError] = useState('');
+  const [testResult, setTestResult] = useState(null);
+  const [testLoading, setTestLoading] = useState(false);
 
   // Get the redirect path from location state or default to dashboard
   const from = location.state?.from?.pathname || '/dashboard';
+  
+  // Handle API test
+  const handleTestApi = async () => {
+    setTestLoading(true);
+    setTestResult(null);
+    
+    try {
+      const result = await testApiConnection();
+      setTestResult(result);
+    } catch (err) {
+      setTestResult({ 
+        success: false, 
+        message: 'Unexpected error during test',
+        error: err.toString()
+      });
+    } finally {
+      setTestLoading(false);
+    }
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -256,6 +277,63 @@ const LoginPage = () => {
                 </span>
               </button>
             </div>
+          </div>
+          
+          {/* API Connection Test */}
+          <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-200 mb-4">API Connection Test</h3>
+            
+            <button
+              type="button"
+              onClick={handleTestApi}
+              disabled={testLoading}
+              className="flex w-full justify-center rounded-md bg-gray-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {testLoading ? 'Testing...' : 'Test API Connection'}
+            </button>
+            
+            {testResult && (
+              <div className={`mt-4 rounded-md p-4 ${testResult.success ? 'bg-green-50 dark:bg-green-900' : 'bg-danger-50 dark:bg-danger-900'}`}>
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    {testResult.success ? (
+                      <svg className="h-5 w-5 text-green-400 dark:text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5 text-danger-400 dark:text-danger-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="ml-3">
+                    <h3 className={`text-sm font-medium ${testResult.success ? 'text-green-800 dark:text-green-200' : 'text-danger-800 dark:text-danger-200'}`}>
+                      {testResult.success ? 'Connection Successful' : 'Connection Failed'}
+                    </h3>
+                    <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                      {testResult.database && (
+                        <div className="mb-2">
+                          <h4 className="font-medium">Database Status:</h4>
+                          <div className={`px-3 py-1 rounded-md inline-block ${
+                            testResult.database.status === 'connected' 
+                              ? 'bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100' 
+                              : 'bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-100'
+                          }`}>
+                            {testResult.database.status === 'connected' ? 'Connected' : 'Disconnected'}
+                          </div>
+                          {testResult.database.host && (
+                            <div className="mt-1">Host: {testResult.database.host}</div>
+                          )}
+                        </div>
+                      )}
+                      <pre className="whitespace-pre-wrap overflow-auto max-h-40 bg-gray-100 dark:bg-gray-700 p-2 rounded-md">
+                        {JSON.stringify(testResult, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

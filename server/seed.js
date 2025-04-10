@@ -405,6 +405,207 @@ const generateMarketingContent = () => {
   };
 };
 
+// Helper function to generate homepage content
+const generateHomepageContent = () => {
+  return {
+    type: 'homepage_content',
+    settings: {
+      hero: {
+        title: 'Launch Your SaaS Product Faster',
+        description: 'A complete starter template for building your SaaS application. Authentication, billing, multi-tenancy, and more - all pre-built so you can focus on your core features.'
+      },
+      features: [
+        {
+          name: 'Multi-tenancy',
+          description: 'Isolate data and configuration for each customer with our robust multi-tenant architecture.'
+        },
+        {
+          name: 'User Management',
+          description: 'Comprehensive user management with roles, permissions, and team collaboration features.'
+        },
+        {
+          name: 'Subscription Billing',
+          description: 'Flexible subscription plans with Stripe integration for seamless billing and payments.'
+        },
+        {
+          name: 'White Labeling',
+          description: 'Customize the look and feel with your own branding, colors, and domain.'
+        },
+        {
+          name: 'API Access',
+          description: 'Integrate with your existing systems using our comprehensive REST API.'
+        },
+        {
+          name: 'Analytics Dashboard',
+          description: 'Gain insights into usage patterns and business metrics with detailed analytics.'
+        }
+      ],
+      pricing: {
+        title: 'Plans for teams of all sizes',
+        description: 'Choose the plan that\'s right for you. All plans include a 14-day free trial.'
+      },
+      tiers: [
+        {
+          name: 'Free',
+          id: 'tier-free',
+          href: '/register',
+          price: { monthly: '$0' },
+          description: 'The essentials to provide your best work for clients.',
+          features: ['5 users', '1 GB storage', 'Basic analytics', 'Email support'],
+          mostPopular: false
+        },
+        {
+          name: 'Starter',
+          id: 'tier-starter',
+          href: '/register',
+          price: { monthly: '$19' },
+          description: 'A plan that scales with your rapidly growing business.',
+          features: [
+            '25 users',
+            '10 GB storage',
+            'Advanced analytics',
+            'Priority email support',
+            'Custom domain',
+            'API access'
+          ],
+          mostPopular: true
+        },
+        {
+          name: 'Enterprise',
+          id: 'tier-enterprise',
+          href: '/register',
+          price: { monthly: '$49' },
+          description: 'Dedicated support and infrastructure for your company.',
+          features: [
+            'Unlimited users',
+            '100 GB storage',
+            'Advanced analytics',
+            '24/7 phone support',
+            'Custom domain',
+            'API access',
+            'White labeling',
+            'Custom integrations'
+          ],
+          mostPopular: false
+        }
+      ],
+      faqs: [
+        {
+          id: 1,
+          question: "What's the best thing about this SaaS template?",
+          answer: "The best thing about this SaaS template is that it comes with all the essential features you need to launch your SaaS product quickly. It includes authentication, subscription management, multi-tenancy, and more, saving you months of development time."
+        },
+        {
+          id: 2,
+          question: 'How do I customize the template for my needs?',
+          answer: 'The template is built with modularity in mind. You can easily customize the components, styles, and functionality to match your specific requirements. The code is well-organized and documented to make customization straightforward.'
+        },
+        {
+          id: 3,
+          question: 'What technologies are used in this template?',
+          answer: 'This template uses React for the frontend, Node.js with Express for the backend, MongoDB for the database, and integrates with Stripe for payment processing. It also uses modern tools like Tailwind CSS for styling and JWT for authentication.'
+        },
+        {
+          id: 4,
+          question: 'Is this template suitable for my SaaS idea?',
+          answer: 'This template is designed to be a starting point for a wide range of SaaS applications. It provides the common infrastructure needed by most SaaS products, allowing you to focus on building your unique features and value proposition.'
+        }
+      ],
+      cta: {
+        title: 'Ready to get started?',
+        subtitle: 'Start your free trial today.',
+        description: 'Join thousands of companies using our SaaS template to build their products.'
+      }
+    },
+    active: true,
+    version: 1
+  };
+};
+
+// Helper function to generate dashboard content
+const generateDashboardContent = () => {
+  return {
+    type: 'dashboard_content',
+    settings: {
+      stats: [
+        { 
+          id: 1, 
+          name: 'Storage Used', 
+          icon: 'ServerIcon', 
+          change: '+4.75%', 
+          changeType: 'increase' 
+        },
+        { 
+          id: 2, 
+          name: 'Active Users', 
+          icon: 'UserGroupIcon', 
+          change: '+10.18%', 
+          changeType: 'increase' 
+        },
+        { 
+          id: 3, 
+          name: 'Documents', 
+          icon: 'DocumentTextIcon', 
+          change: '+3.45%', 
+          changeType: 'increase' 
+        },
+        { 
+          id: 4, 
+          name: 'Next Invoice', 
+          icon: 'CreditCardIcon', 
+          change: 'May 1, 2025', 
+          changeType: 'neutral' 
+        }
+      ],
+      adminStats: [
+        { 
+          name: 'Total Users', 
+          change: '+5%', 
+          changeType: 'increase' 
+        },
+        { 
+          name: 'Active Tenants', 
+          change: '+8%', 
+          changeType: 'increase' 
+        },
+        { 
+          name: 'Revenue (MTD)', 
+          change: '+12%', 
+          changeType: 'increase' 
+        },
+        { 
+          name: 'Churn Rate', 
+          value: '3.2%', 
+          change: '-0.4%', 
+          changeType: 'decrease' 
+        }
+      ],
+      quickActions: [
+        {
+          title: 'Create Document',
+          description: 'Start a new document from scratch.',
+          icon: 'DocumentTextIcon',
+          action: 'create'
+        },
+        {
+          title: 'Invite Team Member',
+          description: 'Add someone to your workspace.',
+          icon: 'UserGroupIcon',
+          action: 'invite'
+        },
+        {
+          title: 'Upgrade Storage',
+          description: 'Get more space for your files.',
+          icon: 'ServerIcon',
+          action: 'upgrade'
+        }
+      ]
+    },
+    active: true,
+    version: 1
+  };
+};
+
 // Helper function to generate subscription plans
 const generateSubscriptionPlans = () => {
   return {
@@ -861,6 +1062,28 @@ const seedDatabase = async (clearExisting = false) => {
       console.log('Created marketing content config');
     } else {
       console.log('Marketing content already exists in the database');
+    }
+    
+    // Generate and store homepage content in the database
+    console.log('\nGenerating homepage content...');
+    const existingHomepageConfig = await Config.findOne({ type: 'homepage_content' });
+    
+    if (!existingHomepageConfig) {
+      const homepageConfig = await Config.create(generateHomepageContent());
+      console.log('Created homepage content config');
+    } else {
+      console.log('Homepage content already exists in the database');
+    }
+    
+    // Generate and store dashboard content in the database
+    console.log('\nGenerating dashboard content...');
+    const existingDashboardConfig = await Config.findOne({ type: 'dashboard_content' });
+    
+    if (!existingDashboardConfig) {
+      const dashboardConfig = await Config.create(generateDashboardContent());
+      console.log('Created dashboard content config');
+    } else {
+      console.log('Dashboard content already exists in the database');
     }
     
     // Generate and store activity data

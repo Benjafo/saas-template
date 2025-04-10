@@ -1,5 +1,5 @@
-import axios from 'axios';
 import React, { useState } from 'react';
+import apiClient from '../../utils/api';
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -30,7 +30,7 @@ const ContactPage = () => {
 
     try {
       // Send the form data to the backend API
-      await axios.post('/api/v1/contact', formData);
+      await apiClient.post('/contact', formData);
       
       setSubmitSuccess(true);
       setFormData({

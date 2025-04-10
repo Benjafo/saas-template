@@ -1,6 +1,6 @@
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import apiClient from '../../utils/api';
 
 const PricingPage = () => {
   const [annual, setAnnual] = useState(true);
@@ -18,9 +18,8 @@ const PricingPage = () => {
         setLoading(true);
         
         // Fetch subscription plans
-        const plansResponse = await axios.get('http://localhost:5000/api/v1/config/subscription-plans');
-        // const plansResponse = await axios.get('http://localhost:5000/api/v1/config/subscription-plans/lalalala');
-        console.log('API response: ', plansResponse)
+        const plansResponse = await apiClient.get('/config/subscription-plans');
+        console.log('API response: ', plansResponse);
         const plans = plansResponse.data.data.plans;
         
         // Transform plans data to match the expected format for tiers
@@ -41,7 +40,7 @@ const PricingPage = () => {
         console.log('Tier data loaded from database')
         
         // Fetch marketing content (FAQs)
-        const marketingResponse = await axios.get('/config/marketing-content');
+        const marketingResponse = await apiClient.get('/config/marketing-content');
         const marketingContent = marketingResponse.data.data.marketingContent;
         
         if (marketingContent && marketingContent.faqs) {

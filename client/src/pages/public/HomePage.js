@@ -1,108 +1,78 @@
 import { CheckIcon } from '@heroicons/react/20/solid';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-
-const features = [
-  {
-    name: 'Multi-tenancy',
-    description: 'Isolate data and configuration for each customer with our robust multi-tenant architecture.',
-  },
-  {
-    name: 'User Management',
-    description: 'Comprehensive user management with roles, permissions, and team collaboration features.',
-  },
-  {
-    name: 'Subscription Billing',
-    description: 'Flexible subscription plans with Stripe integration for seamless billing and payments.',
-  },
-  {
-    name: 'White Labeling',
-    description: 'Customize the look and feel with your own branding, colors, and domain.',
-  },
-  {
-    name: 'API Access',
-    description: 'Integrate with your existing systems using our comprehensive REST API.',
-  },
-  {
-    name: 'Analytics Dashboard',
-    description: 'Gain insights into usage patterns and business metrics with detailed analytics.',
-  },
-];
-
-const tiers = [
-  {
-    name: 'Free',
-    id: 'tier-free',
-    href: '/register',
-    price: { monthly: '$0' },
-    description: 'The essentials to provide your best work for clients.',
-    features: ['5 users', '1 GB storage', 'Basic analytics', 'Email support'],
-    mostPopular: false,
-  },
-  {
-    name: 'Starter',
-    id: 'tier-starter',
-    href: '/register',
-    price: { monthly: '$19' },
-    description: 'A plan that scales with your rapidly growing business.',
-    features: [
-      '25 users',
-      '10 GB storage',
-      'Advanced analytics',
-      'Priority email support',
-      'Custom domain',
-      'API access',
-    ],
-    mostPopular: true,
-  },
-  {
-    name: 'Enterprise',
-    id: 'tier-enterprise',
-    href: '/register',
-    price: { monthly: '$49' },
-    description: 'Dedicated support and infrastructure for your company.',
-    features: [
-      'Unlimited users',
-      '100 GB storage',
-      'Advanced analytics',
-      '24/7 phone support',
-      'Custom domain',
-      'API access',
-      'White labeling',
-      'Custom integrations',
-    ],
-    mostPopular: false,
-  },
-];
-
-const faqs = [
-  {
-    id: 1,
-    question: "What's the best thing about this SaaS template?",
-    answer:
-      "The best thing about this SaaS template is that it comes with all the essential features you need to launch your SaaS product quickly. It includes authentication, subscription management, multi-tenancy, and more, saving you months of development time.",
-  },
-  {
-    id: 2,
-    question: 'How do I customize the template for my needs?',
-    answer:
-      'The template is built with modularity in mind. You can easily customize the components, styles, and functionality to match your specific requirements. The code is well-organized and documented to make customization straightforward.',
-  },
-  {
-    id: 3,
-    question: 'What technologies are used in this template?',
-    answer:
-      'This template uses React for the frontend, Node.js with Express for the backend, MongoDB for the database, and integrates with Stripe for payment processing. It also uses modern tools like Tailwind CSS for styling and JWT for authentication.',
-  },
-  {
-    id: 4,
-    question: 'Is this template suitable for my SaaS idea?',
-    answer:
-      'This template is designed to be a starting point for a wide range of SaaS applications. It provides the common infrastructure needed by most SaaS products, allowing you to focus on building your unique features and value proposition.',
-  },
-];
+import apiClient from '../../utils/api';
 
 const HomePage = () => {
+  const [content, setContent] = useState({
+    hero: {
+      title: 'Launch Your SaaS Product Faster',
+      description: 'A complete starter template for building your SaaS application.'
+    },
+    features: [],
+    pricing: {
+      title: 'Plans for teams of all sizes',
+      description: 'Choose the plan that\'s right for you.'
+    },
+    tiers: [],
+    faqs: [],
+    cta: {
+      title: 'Ready to get started?',
+      subtitle: 'Start your free trial today.',
+      description: 'Join thousands of companies using our SaaS template.'
+    }
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        setLoading(true);
+        // Use the apiClient instead of axios directly
+        const response = await apiClient.get('/config/homepage-content');
+        console.log('Homepage response: ', response);
+        if (response.data && response.data.data && response.data.data.homepageContent) {
+          setContent(response.data.data.homepageContent);
+        }
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching homepage content:', err);
+        setError('Failed to load content. Please try again later.');
+        setLoading(false);
+      }
+    };
+    
+    fetchContent();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 dark:bg-red-900 p-4 rounded-md">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Error</h3>
+            <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+              <p>{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="bg-white dark:bg-gray-900">
       {/* Hero section */}
@@ -119,11 +89,10 @@ const HomePage = () => {
         <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-6xl">
-              AAAALaunch Your SaaS Product Faster
+              {content.hero.title}
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
-              A complete starter template for building your SaaS application. Authentication, billing, multi-tenancy, and
-              more - all pre-built so you can focus on your core features.
+              {content.hero.description}
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
@@ -162,7 +131,7 @@ const HomePage = () => {
         </div>
         <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
           <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
-            {features.map((feature) => (
+            {content.features.map((feature) => (
               <div key={feature.name} className="flex flex-col">
                 <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900 dark:text-white">
                   <div className="h-5 w-5 flex-none rounded-full bg-primary-600 dark:bg-primary-500" />
@@ -183,14 +152,14 @@ const HomePage = () => {
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-base font-semibold leading-7 text-primary-600 dark:text-primary-400">Pricing</h2>
             <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-              Plans for teams of all sizes
+              {content.pricing.title}
             </p>
             <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
-              Choose the plan that's right for you. All plans include a 14-day free trial.
+              {content.pricing.description}
             </p>
           </div>
           <div className="mx-auto mt-16 grid max-w-lg grid-cols-1 items-center gap-y-6 sm:mt-20 sm:gap-y-0 lg:max-w-4xl lg:grid-cols-3">
-            {tiers.map((tier, tierIdx) => (
+            {content.tiers.map((tier, tierIdx) => (
               <div
                 key={tier.id}
                 className={`${
@@ -255,7 +224,7 @@ const HomePage = () => {
             Frequently asked questions
           </h2>
           <dl className="mt-10 space-y-6 divide-y divide-gray-900/10 dark:divide-gray-100/10">
-            {faqs.map((faq) => (
+            {content.faqs.map((faq) => (
               <div key={faq.id} className="pt-6">
                 <dt>
                   <div className="text-lg font-semibold leading-7 text-gray-900 dark:text-white">{faq.question}</div>
@@ -271,12 +240,12 @@ const HomePage = () => {
       <div className="bg-primary-600 dark:bg-primary-700">
         <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
           <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Ready to get started?
+            {content.cta.title}
             <br />
-            Start your free trial today.
+            {content.cta.subtitle}
           </h2>
           <p className="mt-6 text-lg leading-8 text-primary-100">
-            Join thousands of companies using our SaaS template to build their products.
+            {content.cta.description}
           </p>
           <div className="mt-10 flex items-center gap-x-6">
             <Link

@@ -127,7 +127,7 @@ const configSchema = new mongoose.Schema(
     type: {
       type: String,
       required: [true, 'Config must have a type'],
-      enum: ['subscription_plans', 'email_templates', 'system_settings', 'feature_flags', 'marketing_content'],
+      enum: ['subscription_plans', 'email_templates', 'system_settings', 'feature_flags', 'marketing_content', 'homepage_content', 'dashboard_content'],
       unique: true
     },
     plans: [planSchema],

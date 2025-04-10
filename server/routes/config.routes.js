@@ -7,6 +7,8 @@ const router = express.Router();
 // Public routes
 router.get('/subscription-plans', configController.getSubscriptionPlans);
 router.get('/marketing-content', configController.getMarketingContent);
+router.get('/homepage-content', configController.getHomepageContent);
+router.get('/dashboard-content', configController.getDashboardContent);
 
 // Protected routes
 router.get('/feature-flags', authenticate, configController.getFeatureFlags);

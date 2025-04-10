@@ -6,11 +6,11 @@ import {
     ServerIcon,
     UserGroupIcon,
 } from '@heroicons/react/24/outline';
-import axios from 'axios';
 import { format, formatDistanceToNow } from 'date-fns';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import apiClient from '../../utils/api';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -28,16 +28,16 @@ const DashboardPage = () => {
         setLoading(true);
         
         // Fetch user subscription
-        const subscriptionRes = await axios.get('/users/subscription');
+        const subscriptionRes = await apiClient.get('/users/subscription');
         setSubscription(subscriptionRes.data.data.subscription);
         
         let activities = [];
         let invoices = [];
-        let actions = [];
+        let dashboardContent = null;
         
         try {
           // Fetch recent activities
-          const activitiesRes = await axios.get('/seed/activities');
+          const activitiesRes = await apiClient.get('/seed/activities');
           
           // Only take the 5 most recent activities
           activities = activitiesRes.data.data.activities.slice(0, 5);
@@ -48,7 +48,7 @@ const DashboardPage = () => {
         
         try {
           // Fetch invoices
-          const invoicesRes = await axios.get('/seed/invoices');
+          const invoicesRes = await apiClient.get('/seed/invoices');
           invoices = invoicesRes.data.data.invoices;
         } catch (invoiceError) {
           console.warn('Could not fetch invoices:', invoiceError);
@@ -56,17 +56,23 @@ const DashboardPage = () => {
         }
         
         try {
-          // Fetch marketing content for quick actions
-          const marketingRes = await axios.get('/config/marketing-content');
-          const marketingContent = marketingRes.data.data.marketingContent;
-          
-          if (marketingContent && marketingContent.dashboardQuickActions) {
-            actions = marketingContent.dashboardQuickActions;
-          }
-        } catch (marketingError) {
-          console.warn('Could not fetch marketing content:', marketingError);
-          // Set default quick actions if API fails
-          actions = [
+          // Fetch dashboard content
+          const dashboardRes = await apiClient.get('/config/dashboard-content');
+          dashboardContent = dashboardRes.data.data.dashboardContent;
+        } catch (dashboardError) {
+          console.warn('Could not fetch dashboard content:', dashboardError);
+          // Continue with default content
+        }
+        
+        setActivities(activities);
+        setInvoices(invoices);
+        
+        // Set quick actions from dashboard content or use default
+        if (dashboardContent && dashboardContent.quickActions) {
+          setQuickActions(dashboardContent.quickActions);
+        } else {
+          // Fallback to default quick actions
+          setQuickActions([
             {
               title: 'Create Document',
               description: 'Start a new document from scratch.',
@@ -85,55 +91,103 @@ const DashboardPage = () => {
               icon: 'ServerIcon',
               action: 'upgrade'
             }
-          ];
+          ]);
         }
-        
-        setActivities(activities);
-        setInvoices(invoices);
-        setQuickActions(actions);
         
         // Generate stats based on the data
         const userSubscription = subscriptionRes.data.data.subscription;
         const tenantFeatures = userSubscription?.features || {};
         
-        const statsData = [
-          { 
-            id: 1, 
-            name: 'Storage Used', 
-            value: tenantFeatures.storage ? `${(tenantFeatures.storage / 1000).toFixed(1)} GB` : '100 MB', 
-            icon: ServerIcon, 
-            change: '+4.75%', 
-            changeType: 'increase' 
-          },
-          { 
-            id: 2, 
-            name: 'Active Users', 
-            value: '12', // This would come from a real API in a production app
-            icon: UserGroupIcon, 
-            change: '+10.18%', 
-            changeType: 'increase' 
-          },
-          { 
-            id: 3, 
-            name: 'Documents', 
-            value: `${Math.floor(Math.random() * 100) + 50}`, // Random number for demo
-            icon: DocumentTextIcon, 
-            change: '+3.45%', 
-            changeType: 'increase' 
-          },
-          { 
-            id: 4, 
-            name: 'Next Invoice', 
-            value: userSubscription?.plan === 'free' ? 'Free' : 
-                  `$${invoices.length > 0 ? 
-                     invoices[0].amount.toFixed(2) : '0.00'}`, 
-            icon: CreditCardIcon, 
-            change: userSubscription?.endDate ? format(new Date(userSubscription.endDate), 'MMM d, yyyy') : 'N/A', 
-            changeType: 'neutral' 
-          },
-        ];
-        
-        setStats(statsData);
+        if (dashboardContent && dashboardContent.stats) {
+          // Use stats from dashboard content
+          const statsData = dashboardContent.stats.map(stat => {
+            // Map the icon string to the actual component
+            let IconComponent;
+            switch (stat.icon) {
+              case 'ServerIcon':
+                IconComponent = ServerIcon;
+                break;
+              case 'UserGroupIcon':
+                IconComponent = UserGroupIcon;
+                break;
+              case 'DocumentTextIcon':
+                IconComponent = DocumentTextIcon;
+                break;
+              case 'CreditCardIcon':
+                IconComponent = CreditCardIcon;
+                break;
+              default:
+                IconComponent = DocumentTextIcon;
+            }
+            
+            // For the Next Invoice stat, use real data if available
+            if (stat.name === 'Next Invoice') {
+              return {
+                ...stat,
+                icon: IconComponent,
+                value: userSubscription?.plan === 'free' ? 'Free' : 
+                      `$${invoices.length > 0 ? invoices[0].amount.toFixed(2) : '0.00'}`,
+                change: userSubscription?.endDate ? format(new Date(userSubscription.endDate), 'MMM d, yyyy') : 'N/A'
+              };
+            }
+            
+            // For Storage Used stat, use real data if available
+            if (stat.name === 'Storage Used' && tenantFeatures.storage) {
+              return {
+                ...stat,
+                icon: IconComponent,
+                value: `${(tenantFeatures.storage / 1000).toFixed(1)} GB`
+              };
+            }
+            
+            return {
+              ...stat,
+              icon: IconComponent
+            };
+          });
+          
+          setStats(statsData);
+        } else {
+          // Fallback to default stats
+          const statsData = [
+            { 
+              id: 1, 
+              name: 'Storage Used', 
+              value: tenantFeatures.storage ? `${(tenantFeatures.storage / 1000).toFixed(1)} GB` : '100 MB', 
+              icon: ServerIcon, 
+              change: '+4.75%', 
+              changeType: 'increase' 
+            },
+            { 
+              id: 2, 
+              name: 'Active Users', 
+              value: '12', // This would come from a real API in a production app
+              icon: UserGroupIcon, 
+              change: '+10.18%', 
+              changeType: 'increase' 
+            },
+            { 
+              id: 3, 
+              name: 'Documents', 
+              value: `${Math.floor(Math.random() * 100) + 50}`, // Random number for demo
+              icon: DocumentTextIcon, 
+              change: '+3.45%', 
+              changeType: 'increase' 
+            },
+            { 
+              id: 4, 
+              name: 'Next Invoice', 
+              value: userSubscription?.plan === 'free' ? 'Free' : 
+                    `$${invoices.length > 0 ? 
+                      invoices[0].amount.toFixed(2) : '0.00'}`, 
+              icon: CreditCardIcon, 
+              change: userSubscription?.endDate ? format(new Date(userSubscription.endDate), 'MMM d, yyyy') : 'N/A', 
+              changeType: 'neutral' 
+            },
+          ];
+          
+          setStats(statsData);
+        }
         setLoading(false);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);

@@ -1,7 +1,7 @@
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import apiClient from '../../utils/api';
 
 const BillingPage = () => {
   const { user } = useAuth();
@@ -24,12 +24,12 @@ const BillingPage = () => {
         setLoading(true);
         
         // Fetch user subscription to get current plan
-        const userSubscriptionRes = await axios.get('/users/subscription');
+        const userSubscriptionRes = await apiClient.get('/users/subscription');
         const userSubscription = userSubscriptionRes.data.data.subscription;
         setCurrentPlan(userSubscription?.plan || 'free');
         
         // Fetch subscription plans
-        const plansResponse = await axios.get('/config/subscription-plans');
+        const plansResponse = await apiClient.get('/config/subscription-plans');
         const plansData = plansResponse.data.data.plans;
         
         // Transform plans data to match the expected format
@@ -48,7 +48,7 @@ const BillingPage = () => {
         
         // Fetch invoices
         try {
-          const invoicesRes = await axios.get('/seed/invoices');
+          const invoicesRes = await apiClient.get('/seed/invoices');
           const invoicesData = invoicesRes.data.data.invoices;
           
           // Format invoices for display
