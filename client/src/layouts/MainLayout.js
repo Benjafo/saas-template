@@ -72,7 +72,7 @@ const MainLayout = () => {
           <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:gap-x-4">
             <button
               onClick={toggleDarkMode}
-              className="rounded-full p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="flex items-center px-3.5 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               {darkMode ? (
                 <SunIcon className="h-6 w-6" aria-hidden="true" />
@@ -83,7 +83,7 @@ const MainLayout = () => {
 
             {isAuthenticated ? (
               <Popover className="relative">
-                <Popover.Button className="flex items-center gap-x-1 text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100 outline-none">
+                <Popover.Button className="flex items-center gap-x-1 px-3.5 py-2 text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100 outline-none hover:bg-gray-100 dark:hover:bg-gray-700">
                   <UserIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden="true" />
                   <span>{user?.name || 'Account'}</span>
                   <ChevronDownIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden="true" />
@@ -126,7 +126,7 @@ const MainLayout = () => {
               <>
                 <Link
                   to="/login"
-                  className="text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
+                  className="flex items-center px-3.5 py-2 text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
                 >
                   Log in
                 </Link>

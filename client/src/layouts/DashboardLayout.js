@@ -1,14 +1,14 @@
 import { Dialog, Transition } from '@headlessui/react';
 import {
-  ArrowRightOnRectangleIcon,
-  Bars3Icon,
-  ChartBarIcon,
-  Cog6ToothIcon,
-  CreditCardIcon,
-  HomeIcon,
-  MoonIcon,
-  SunIcon,
-  UserIcon
+    ArrowRightOnRectangleIcon,
+    Bars3Icon,
+    ChartBarIcon,
+    Cog6ToothIcon,
+    CreditCardIcon,
+    HomeIcon,
+    MoonIcon,
+    SunIcon,
+    UserIcon
 } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -100,11 +100,11 @@ const DashboardLayout = () => {
                       
                       {/* Admin Link - Only visible to admin users (Mobile) */}
                       {(user?.role === 'admin' || user?.role === 'super-admin') && (
-                        <li className="mt-6">
-                          <div className="text-xs font-semibold leading-6 text-gray-500 dark:text-gray-400">
+                        <li className="pt-2">
+                          <div className="text-xs font-semibold leading-6 text-gray-500 dark:text-gray-400 mb-2">
                             Administration
                           </div>
-                          <ul className="-mx-2 mt-2 space-y-1">
+                          <ul className="-mx-2 space-y-1">
                             <li>
                               <Link
                                 to="/admin"
@@ -212,11 +212,11 @@ const DashboardLayout = () => {
               
               {/* Admin Link - Only visible to admin users */}
               {(user?.role === 'admin' || user?.role === 'super-admin') && (
-                <li className="mt-6">
-                  <div className="text-xs font-semibold leading-6 text-gray-500 dark:text-gray-400">
+                <li className="pt-2">
+                  <div className="text-xs font-semibold leading-6 text-gray-500 dark:text-gray-400 mb-2">
                     Administration
                   </div>
-                  <ul className="-mx-2 mt-2 space-y-1">
+                  <ul className="-mx-2 space-y-1">
                     <li>
                       <Link
                         to="/admin"

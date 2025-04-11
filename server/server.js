@@ -7,7 +7,7 @@ const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser'); // Added cookie-parser
 const mongoose = require('mongoose');
 
-console.log('Running app')
+console.log('Running app1')
 
 // Load environment variables
 dotenv.config({ path: './config/.env' });
@@ -77,7 +77,7 @@ if (process.env.NODE_ENV === 'development') {
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 1000, // Limit each IP to 20 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -88,8 +88,6 @@ app.use(express.json({ limit: '10kb' }));
 
 // Cookie parser
 app.use(cookieParser()); // Added cookie-parser middleware
-
-console.log('Running app');
 
 // Connect to database
 const connectDB = require('./config/database');

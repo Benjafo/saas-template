@@ -1,124 +1,73 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import apiClient from '../../utils/api';
 
 const SubscriptionsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
   const [selectedSubscriptions, setSelectedSubscriptions] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  // In a real application, this data would come from your API
-  const subscriptions = [
-    { 
-      id: 1, 
-      tenantName: 'Acme Inc', 
-      plan: 'Enterprise', 
-      status: 'Active', 
-      startDate: 'Jan 15, 2025', 
-      endDate: 'Jan 15, 2026', 
-      amount: '$999.00',
-      billingCycle: 'Annual',
-      paymentMethod: 'Credit Card'
-    },
-    { 
-      id: 2, 
-      tenantName: 'Globex Corp', 
-      plan: 'Pro', 
-      status: 'Active', 
-      startDate: 'Feb 3, 2025', 
-      endDate: 'Mar 3, 2025', 
-      amount: '$49.00',
-      billingCycle: 'Monthly',
-      paymentMethod: 'PayPal'
-    },
-    { 
-      id: 3, 
-      tenantName: 'Initech', 
-      plan: 'Pro', 
-      status: 'Active', 
-      startDate: 'Feb 10, 2025', 
-      endDate: 'Mar 10, 2025', 
-      amount: '$49.00',
-      billingCycle: 'Monthly',
-      paymentMethod: 'Credit Card'
-    },
-    { 
-      id: 4, 
-      tenantName: 'Umbrella Corp', 
-      plan: 'Enterprise', 
-      status: 'Active', 
-      startDate: 'Jan 5, 2025', 
-      endDate: 'Jan 5, 2026', 
-      amount: '$999.00',
-      billingCycle: 'Annual',
-      paymentMethod: 'Bank Transfer'
-    },
-    { 
-      id: 5, 
-      tenantName: 'Massive Dynamic', 
-      plan: 'Free', 
-      status: 'Inactive', 
-      startDate: 'Mar 1, 2025', 
-      endDate: 'N/A', 
-      amount: '$0.00',
-      billingCycle: 'N/A',
-      paymentMethod: 'N/A'
-    },
-    { 
-      id: 6, 
-      tenantName: 'Stark Industries', 
-      plan: 'Enterprise', 
-      status: 'Active', 
-      startDate: 'Dec 10, 2024', 
-      endDate: 'Dec 10, 2025', 
-      amount: '$999.00',
-      billingCycle: 'Annual',
-      paymentMethod: 'Credit Card'
-    },
-    { 
-      id: 7, 
-      tenantName: 'Wayne Enterprises', 
-      plan: 'Pro', 
-      status: 'Active', 
-      startDate: 'Jan 22, 2025', 
-      endDate: 'Feb 22, 2025', 
-      amount: '$49.00',
-      billingCycle: 'Monthly',
-      paymentMethod: 'PayPal'
-    },
-    { 
-      id: 8, 
-      tenantName: 'Cyberdyne Systems', 
-      plan: 'Free', 
-      status: 'Inactive', 
-      startDate: 'Mar 5, 2025', 
-      endDate: 'N/A', 
-      amount: '$0.00',
-      billingCycle: 'N/A',
-      paymentMethod: 'N/A'
-    },
-    { 
-      id: 9, 
-      tenantName: 'Soylent Corp', 
-      plan: 'Pro', 
-      status: 'Active', 
-      startDate: 'Feb 15, 2025', 
-      endDate: 'Mar 15, 2025', 
-      amount: '$49.00',
-      billingCycle: 'Monthly',
-      paymentMethod: 'Credit Card'
-    },
-    { 
-      id: 10, 
-      tenantName: 'Oscorp', 
-      plan: 'Enterprise', 
-      status: 'Active', 
-      startDate: 'Dec 5, 2024', 
-      endDate: 'Dec 5, 2025', 
-      amount: '$999.00',
-      billingCycle: 'Annual',
-      paymentMethod: 'Bank Transfer'
-    },
-  ];
+  useEffect(() => {
+    const fetchSubscriptions = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.get('/admin/subscriptions');
+        
+        // Transform the API response to match the expected format
+        const formattedSubscriptions = response.data.data.subscriptions.map(sub => {
+          // Format the dates to match the expected format
+          const startDate = sub.subscription?.startDate ? new Date(sub.subscription.startDate) : new Date();
+          const formattedStartDate = startDate.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+          });
+          
+          const endDate = sub.subscription?.endDate ? new Date(sub.subscription.endDate) : null;
+          const formattedEndDate = endDate 
+            ? endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : 'N/A';
+          
+          // Determine amount based on plan
+          let amount = '$0.00';
+          let billingCycle = 'N/A';
+          
+          if (sub.subscription?.plan === 'professional' || sub.subscription?.plan === 'pro') {
+            amount = '$49.00';
+            billingCycle = 'Monthly';
+          } else if (sub.subscription?.plan === 'enterprise') {
+            amount = '$999.00';
+            billingCycle = 'Annual';
+          }
+          
+          return {
+            id: sub.userId,
+            tenantName: sub.name || 'Unknown',
+            plan: sub.subscription?.plan?.charAt(0).toUpperCase() + sub.subscription?.plan?.slice(1) || 'Free',
+            status: sub.subscription?.status?.charAt(0).toUpperCase() + sub.subscription?.status?.slice(1) || 'Inactive',
+            startDate: formattedStartDate,
+            endDate: formattedEndDate,
+            amount,
+            billingCycle,
+            paymentMethod: sub.subscription?.paymentMethod || 'N/A'
+          };
+        });
+        
+        setSubscriptions(formattedSubscriptions);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching subscriptions:', err);
+        setError('Failed to load subscriptions. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSubscriptions();
+  }, []);
 
   // Filter subscriptions based on search term, status, and plan
   const filteredSubscriptions = subscriptions.filter((subscription) => {
@@ -223,96 +172,123 @@ const SubscriptionsPage = () => {
                 </div>
               </div>
 
+              {/* Loading and Error States */}
+              {loading && (
+                <div className="text-center py-10">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">Loading subscriptions...</p>
+                </div>
+              )}
+              
+              {error && (
+                <div className="text-center py-10">
+                  <div className="inline-block rounded-full h-8 w-8 bg-red-100 text-red-600 flex items-center justify-center">
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <p className="mt-2 text-red-600">{error}</p>
+                </div>
+              )}
+              
               {/* Subscriptions Table */}
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th scope="col" className="relative px-6 py-3">
-                        <input
-                          type="checkbox"
-                          className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 dark:text-primary-500 focus:ring-primary-600 dark:focus:ring-primary-500"
-                          checked={selectedSubscriptions.length === filteredSubscriptions.length && filteredSubscriptions.length > 0}
-                          onChange={handleSelectAll}
-                        />
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Tenant
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Plan
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Start Date
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        End Date
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Billing Cycle
-                      </th>
-                      <th scope="col" className="relative px-6 py-3">
-                        <span className="sr-only">Actions</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {filteredSubscriptions.map((subscription) => (
-                      <tr key={subscription.id} className={selectedSubscriptions.includes(subscription.id) ? 'bg-primary-50 dark:bg-primary-900/20' : ''}>
-                        <td className="px-6 py-4 whitespace-nowrap">
+              {!loading && !error && subscriptions.length === 0 && (
+                <div className="text-center py-10">
+                  <p className="text-gray-500 dark:text-gray-400">No subscriptions found.</p>
+                </div>
+              )}
+              
+              {!loading && !error && subscriptions.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th scope="col" className="relative px-6 py-3">
                           <input
                             type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 dark:text-primary-500 focus:ring-primary-600 dark:focus:ring-primary-500"
-                            checked={selectedSubscriptions.includes(subscription.id)}
-                            onChange={() => handleSelectSubscription(subscription.id)}
+                            className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 dark:text-primary-500 focus:ring-primary-600 dark:focus:ring-primary-500"
+                            checked={selectedSubscriptions.length === filteredSubscriptions.length && filteredSubscriptions.length > 0}
+                            onChange={handleSelectAll}
                           />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">{subscription.tenantName}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{subscription.plan}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            subscription.status === 'Active'
-                              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                              : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-                          }`}>
-                            {subscription.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{subscription.startDate}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{subscription.endDate}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{subscription.amount}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{subscription.billingCycle}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            type="button"
-                            className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
-                          >
-                            Edit
-                          </button>
-                        </td>
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Tenant
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Plan
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Start Date
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          End Date
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Billing Cycle
+                        </th>
+                        <th scope="col" className="relative px-6 py-3">
+                          <span className="sr-only">Actions</span>
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {filteredSubscriptions.map((subscription) => (
+                        <tr key={subscription.id} className={selectedSubscriptions.includes(subscription.id) ? 'bg-primary-50 dark:bg-primary-900/20' : ''}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 dark:text-primary-500 focus:ring-primary-600 dark:focus:ring-primary-500"
+                              checked={selectedSubscriptions.includes(subscription.id)}
+                              onChange={() => handleSelectSubscription(subscription.id)}
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">{subscription.tenantName}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{subscription.plan}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              subscription.status === 'Active'
+                                ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                                : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                            }`}>
+                              {subscription.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{subscription.startDate}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{subscription.endDate}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{subscription.amount}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{subscription.billingCycle}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                              type="button"
+                              className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               {/* Pagination */}
               <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">

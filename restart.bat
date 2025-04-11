@@ -5,9 +5,9 @@ echo === Removing existing containers ===
 echo ====================================
 docker-compose down
 
-echo ===========================
+echo ==========================
 echo === Building containers ===
-echo ===========================
+echo ==========================
 docker-compose build
 
 echo ==========================

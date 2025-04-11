@@ -1,34 +1,59 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import apiClient from '../../utils/api';
+
+console.log('Users page loaded')
 
 const UsersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedUsers, setSelectedUsers] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  console.log('Users page loaded')
   
-  // In a real application, this data would come from your API
-  const users = [
-    { id: 1, name: 'Jane Cooper', email: 'jane.cooper@example.com', role: 'Admin', status: 'Active', tenantName: 'Acme Inc', lastLogin: 'Mar 28, 2025' },
-    { id: 2, name: 'Michael Foster', email: 'michael.foster@example.com', role: 'User', status: 'Active', tenantName: 'Acme Inc', lastLogin: 'Mar 27, 2025' },
-    { id: 3, name: 'Dries Vincent', email: 'dries.vincent@example.com', role: 'User', status: 'Active', tenantName: 'Globex Corp', lastLogin: 'Mar 26, 2025' },
-    { id: 4, name: 'Lindsay Walton', email: 'lindsay.walton@example.com', role: 'User', status: 'Active', tenantName: 'Initech', lastLogin: 'Mar 25, 2025' },
-    { id: 5, name: 'Courtney Henry', email: 'courtney.henry@example.com', role: 'User', status: 'Inactive', tenantName: 'Globex Corp', lastLogin: 'Mar 24, 2025' },
-    { id: 6, name: 'Tom Cook', email: 'tom.cook@example.com', role: 'Admin', status: 'Active', tenantName: 'Initech', lastLogin: 'Mar 23, 2025' },
-    { id: 7, name: 'Whitney Francis', email: 'whitney.francis@example.com', role: 'User', status: 'Active', tenantName: 'Acme Inc', lastLogin: 'Mar 22, 2025' },
-    { id: 8, name: 'Leonard Krasner', email: 'leonard.krasner@example.com', role: 'User', status: 'Inactive', tenantName: 'Initech', lastLogin: 'Mar 21, 2025' },
-    { id: 9, name: 'Floyd Miles', email: 'floyd.miles@example.com', role: 'User', status: 'Active', tenantName: 'Globex Corp', lastLogin: 'Mar 20, 2025' },
-    { id: 10, name: 'Emily Selman', email: 'emily.selman@example.com', role: 'Admin', status: 'Active', tenantName: 'Acme Inc', lastLogin: 'Mar 19, 2025' },
-    { id: 11, name: 'Jane Cooper', email: 'jane.cooper@example.com', role: 'Admin', status: 'Active', tenantName: 'Acme Inc', lastLogin: 'Mar 28, 2025' },
-    { id: 12, name: 'Michael Foster', email: 'michael.foster@example.com', role: 'User', status: 'Active', tenantName: 'Acme Inc', lastLogin: 'Mar 27, 2025' },
-    { id: 13, name: 'Dries Vincent', email: 'dries.vincent@example.com', role: 'User', status: 'Active', tenantName: 'Globex Corp', lastLogin: 'Mar 26, 2025' },
-    { id: 14, name: 'Lindsay Walton', email: 'lindsay.walton@example.com', role: 'User', status: 'Active', tenantName: 'Initech', lastLogin: 'Mar 25, 2025' },
-    { id: 15, name: 'Courtney Henry', email: 'courtney.henry@example.com', role: 'User', status: 'Inactive', tenantName: 'Globex Corp', lastLogin: 'Mar 24, 2025' },
-    { id: 16, name: 'Tom Cook', email: 'tom.cook@example.com', role: 'Admin', status: 'Active', tenantName: 'Initech', lastLogin: 'Mar 23, 2025' },
-    { id: 17, name: 'Whitney Francis', email: 'whitney.francis@example.com', role: 'User', status: 'Active', tenantName: 'Acme Inc', lastLogin: 'Mar 22, 2025' },
-    { id: 18, name: 'Leonard Krasner', email: 'leonard.krasner@example.com', role: 'User', status: 'Inactive', tenantName: 'Initech', lastLogin: 'Mar 21, 2025' },
-    { id: 19, name: 'Floyd Miles', email: 'floyd.miles@example.com', role: 'User', status: 'Active', tenantName: 'Globex Corp', lastLogin: 'Mar 20, 2025' },
-    { id: 20, name: 'Emily Selman', email: 'emily.selman@example.com', role: 'Admin', status: 'Active', tenantName: 'Acme Inc', lastLogin: 'Mar 19, 2025' },
-  ];
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.get('/admin/users');
+        console.log('Users list: ', response)
+        
+        // Transform the API response to match the expected format
+        const formattedUsers = response.data.data.users.map(user => {
+          // Format the date to match the expected format
+          const lastLoginDate = user.updatedAt ? new Date(user.updatedAt) : new Date();
+          const lastLogin = lastLoginDate.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+          });
+          
+          return {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role.charAt(0).toUpperCase() + user.role.slice(1), // Capitalize role
+            status: user.active ? 'Active' : 'Inactive',
+            tenantName: user.tenantId ? user.tenantId.name : 'N/A',
+            lastLogin
+          };
+        });
+        
+        setUsers(formattedUsers);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError('Failed to load users. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
 
   // Filter users based on search term, role, and status
   const filteredUsers = users.filter((user) => {
@@ -134,8 +159,34 @@ const UsersPage = () => {
                 </div>
               </div>
 
+              {/* Loading and Error States */}
+              {loading && (
+                <div className="text-center py-10">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">Loading users...</p>
+                </div>
+              )}
+              
+              {error && (
+                <div className="text-center py-10">
+                  <div className="inline-block rounded-full h-8 w-8 bg-red-100 text-red-600 flex items-center justify-center">
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <p className="mt-2 text-red-600">{error}</p>
+                </div>
+              )}
+              
               {/* Users Table */}
-              <div className="overflow-x-auto">
+              {!loading && !error && users.length === 0 && (
+                <div className="text-center py-10">
+                  <p className="text-gray-500 dark:text-gray-400">No users found.</p>
+                </div>
+              )}
+              
+              {!loading && !error && users.length > 0 && (
+                <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
@@ -229,6 +280,7 @@ const UsersPage = () => {
                   </tbody>
                 </table>
               </div>
+              )}
 
               {/* Pagination */}
               <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">

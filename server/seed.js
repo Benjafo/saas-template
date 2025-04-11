@@ -346,6 +346,7 @@ const generateInvoiceData = (users) => {
 const generateMarketingContent = () => {
   return {
     type: 'marketing_content',
+    plans: [], // Explicitly set empty plans array to avoid MongoDB validation errors
     settings: {
       faqs: [
         {
@@ -409,6 +410,7 @@ const generateMarketingContent = () => {
 const generateHomepageContent = () => {
   return {
     type: 'homepage_content',
+    plans: [], // Explicitly set empty plans array to avoid MongoDB validation errors
     settings: {
       hero: {
         title: 'Launch Your SaaS Product Faster',
@@ -447,7 +449,7 @@ const generateHomepageContent = () => {
       tiers: [
         {
           name: 'Free',
-          id: 'tier-free',
+          tierId: 'tier-free',
           href: '/register',
           price: { monthly: '$0' },
           description: 'The essentials to provide your best work for clients.',
@@ -456,7 +458,7 @@ const generateHomepageContent = () => {
         },
         {
           name: 'Starter',
-          id: 'tier-starter',
+          tierId: 'tier-starter',
           href: '/register',
           price: { monthly: '$19' },
           description: 'A plan that scales with your rapidly growing business.',
@@ -472,9 +474,9 @@ const generateHomepageContent = () => {
         },
         {
           name: 'Enterprise',
-          id: 'tier-enterprise',
+          tierId: 'tier-enterprise',
           href: '/register',
-          price: { monthly: '$49' },
+          price: { monthly: '$99' },
           description: 'Dedicated support and infrastructure for your company.',
           features: [
             'Unlimited users',
@@ -526,6 +528,7 @@ const generateHomepageContent = () => {
 const generateDashboardContent = () => {
   return {
     type: 'dashboard_content',
+    plans: [], // Explicitly set empty plans array to avoid MongoDB validation errors
     settings: {
       stats: [
         { 
@@ -837,7 +840,7 @@ const seedDatabase = async (clearExisting = false) => {
     await connectDB();
     console.log('Database connected successfully');
 
-    if (clearExisting) {
+    // if (clearExisting) {
       console.log('\n⚠️  WARNING: This will clear all existing data in the database ⚠️');
       console.log('This action cannot be undone. Make sure this is not a production database.');
       
@@ -858,7 +861,7 @@ const seedDatabase = async (clearExisting = false) => {
       await Invoice.deleteMany({});
       await Config.deleteMany({});
       console.log('Existing data cleared');
-    }
+    // }
 
     // Create admin user
     console.log(`\nChecking if admin user (${process.env.ADMIN_EMAIL}) already exists...`);
@@ -1065,10 +1068,11 @@ const seedDatabase = async (clearExisting = false) => {
     }
     
     // Generate and store homepage content in the database
-    console.log('\nGenerating homepage content...');
+    console.log('\nGenerating homepage content....');
     const existingHomepageConfig = await Config.findOne({ type: 'homepage_content' });
     
     if (!existingHomepageConfig) {
+      console.log('Homepage content does not exist, generating new content')
       const homepageConfig = await Config.create(generateHomepageContent());
       console.log('Created homepage content config');
     } else {
@@ -1146,3 +1150,14 @@ const clearExisting = args.includes('--clear') || args.includes('-c');
 
 // Run the seeding function
 seedDatabase(clearExisting);
+
+
+// (async () => {
+//     await connectDB();
+
+//     // const configs = await Config.find()
+//     // console.log('Found configs: ', configs)
+
+//     // Config.collection.getIndexes().then(indexes => console.log('Found indexes: ', indexes))
+//     // Config.collection.dropIndexes()
+// })()

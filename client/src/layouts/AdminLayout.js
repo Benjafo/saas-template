@@ -102,11 +102,11 @@ const AdminLayout = () => {
                           ))}
                         </ul>
                       </li>
-                      <li>
-                        <div className="text-xs font-semibold leading-6 text-gray-500 dark:text-gray-400">
+                      <li className="pt-2">
+                        <div className="text-xs font-semibold leading-6 text-gray-500 dark:text-gray-400 mb-2">
                           User Area
                         </div>
-                        <ul className="-mx-2 mt-2 space-y-1">
+                        <ul className="-mx-2 space-y-1">
                           <li>
                             <Link
                               to="/dashboard"
@@ -116,7 +116,7 @@ const AdminLayout = () => {
                                 className="h-6 w-6 shrink-0 text-gray-500 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400"
                                 aria-hidden="true"
                               />
-                              Dashboard
+                              User Dashboard
                             </Link>
                           </li>
                         </ul>
@@ -194,11 +194,11 @@ const AdminLayout = () => {
                   ))}
                 </ul>
               </li>
-              <li>
-                <div className="text-xs font-semibold leading-6 text-gray-500 dark:text-gray-400">
+              <li className="pt-2">
+                <div className="text-xs font-semibold leading-6 text-gray-500 dark:text-gray-400 mb-2">
                   User Area
                 </div>
-                <ul className="-mx-2 mt-2 space-y-1">
+                <ul className="-mx-2 space-y-1">
                   <li>
                     <Link
                       to="/dashboard"
@@ -208,7 +208,7 @@ const AdminLayout = () => {
                         className="h-6 w-6 shrink-0 text-gray-500 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400"
                         aria-hidden="true"
                       />
-                      Dashboard
+                      User Dashboard
                     </Link>
                   </li>
                 </ul>

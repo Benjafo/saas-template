@@ -45,7 +45,7 @@ const planSchema = new mongoose.Schema(
     id: {
       type: String,
       required: [true, 'Plan must have an ID'],
-      unique: true,
+    //   unique: true,
       lowercase: true,
       trim: true
     },
@@ -116,7 +116,7 @@ const planSchema = new mongoose.Schema(
   }
 );
 
-planSchema.index({ id: 1 }, { unique: true });
+// planSchema.index({ id: 1 }, { unique: true });
 planSchema.index({ active: 1 });
 
 /**

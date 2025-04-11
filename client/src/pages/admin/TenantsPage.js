@@ -1,24 +1,54 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import apiClient from '../../utils/api';
 
 const TenantsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
   const [selectedTenants, setSelectedTenants] = useState([]);
+  const [tenants, setTenants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  // In a real application, this data would come from your API
-  const tenants = [
-    { id: 1, name: 'Acme Inc', plan: 'Enterprise', status: 'Active', users: 42, createdAt: 'Jan 15, 2025', owner: 'Jane Cooper' },
-    { id: 2, name: 'Globex Corp', plan: 'Pro', status: 'Active', users: 18, createdAt: 'Feb 3, 2025', owner: 'Michael Foster' },
-    { id: 3, name: 'Initech', plan: 'Pro', status: 'Active', users: 12, createdAt: 'Feb 10, 2025', owner: 'Dries Vincent' },
-    { id: 4, name: 'Umbrella Corp', plan: 'Enterprise', status: 'Active', users: 56, createdAt: 'Jan 5, 2025', owner: 'Lindsay Walton' },
-    { id: 5, name: 'Massive Dynamic', plan: 'Free', status: 'Inactive', users: 3, createdAt: 'Mar 1, 2025', owner: 'Courtney Henry' },
-    { id: 6, name: 'Stark Industries', plan: 'Enterprise', status: 'Active', users: 78, createdAt: 'Dec 10, 2024', owner: 'Tom Cook' },
-    { id: 7, name: 'Wayne Enterprises', plan: 'Pro', status: 'Active', users: 24, createdAt: 'Jan 22, 2025', owner: 'Whitney Francis' },
-    { id: 8, name: 'Cyberdyne Systems', plan: 'Free', status: 'Inactive', users: 2, createdAt: 'Mar 5, 2025', owner: 'Leonard Krasner' },
-    { id: 9, name: 'Soylent Corp', plan: 'Pro', status: 'Active', users: 15, createdAt: 'Feb 15, 2025', owner: 'Floyd Miles' },
-    { id: 10, name: 'Oscorp', plan: 'Enterprise', status: 'Active', users: 62, createdAt: 'Dec 5, 2024', owner: 'Emily Selman' },
-  ];
+  useEffect(() => {
+    const fetchTenants = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.get('/admin/tenants');
+        
+        // Transform the API response to match the expected format
+        const formattedTenants = response.data.data.tenants.map(tenant => {
+          // Format the date to match the expected format
+          const createdDate = tenant.createdAt ? new Date(tenant.createdAt) : new Date();
+          const createdAt = createdDate.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+          });
+          
+          return {
+            id: tenant._id,
+            name: tenant.name,
+            plan: tenant.subscription?.plan?.charAt(0).toUpperCase() + tenant.subscription?.plan?.slice(1) || 'Free',
+            status: tenant.active ? 'Active' : 'Inactive',
+            users: tenant.users?.length || 0,
+            createdAt,
+            owner: tenant.owner?.name || 'N/A'
+          };
+        });
+        
+        setTenants(formattedTenants);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching tenants:', err);
+        setError('Failed to load tenants. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTenants();
+  }, []);
 
   // Filter tenants based on search term, status, and plan
   const filteredTenants = tenants.filter((tenant) => {
@@ -124,101 +154,128 @@ const TenantsPage = () => {
                 </div>
               </div>
 
+              {/* Loading and Error States */}
+              {loading && (
+                <div className="text-center py-10">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">Loading tenants...</p>
+                </div>
+              )}
+              
+              {error && (
+                <div className="text-center py-10">
+                  <div className="inline-block rounded-full h-8 w-8 bg-red-100 text-red-600 flex items-center justify-center">
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <p className="mt-2 text-red-600">{error}</p>
+                </div>
+              )}
+              
               {/* Tenants Table */}
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th scope="col" className="relative px-6 py-3">
-                        <input
-                          type="checkbox"
-                          className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 dark:text-primary-500 focus:ring-primary-600 dark:focus:ring-primary-500"
-                          checked={selectedTenants.length === filteredTenants.length && filteredTenants.length > 0}
-                          onChange={handleSelectAll}
-                        />
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Plan
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Users
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Created
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Owner
-                      </th>
-                      <th scope="col" className="relative px-6 py-3">
-                        <span className="sr-only">Actions</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {filteredTenants.map((tenant) => (
-                      <tr key={tenant.id} className={selectedTenants.includes(tenant.id) ? 'bg-primary-50 dark:bg-primary-900/20' : ''}>
-                        <td className="px-6 py-4 whitespace-nowrap">
+              {!loading && !error && tenants.length === 0 && (
+                <div className="text-center py-10">
+                  <p className="text-gray-500 dark:text-gray-400">No tenants found.</p>
+                </div>
+              )}
+              
+              {!loading && !error && tenants.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th scope="col" className="relative px-6 py-3">
                           <input
                             type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 dark:text-primary-500 focus:ring-primary-600 dark:focus:ring-primary-500"
-                            checked={selectedTenants.includes(tenant.id)}
-                            onChange={() => handleSelectTenant(tenant.id)}
+                            className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 dark:text-primary-500 focus:ring-primary-600 dark:focus:ring-primary-500"
+                            checked={selectedTenants.length === filteredTenants.length && filteredTenants.length > 0}
+                            onChange={handleSelectAll}
                           />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 flex-shrink-0">
-                              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-500">
-                                <span className="text-sm font-medium leading-none text-white">
-                                  {tenant.name.split(' ').map(n => n[0]).join('')}
-                                </span>
-                              </span>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">{tenant.name}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{tenant.plan}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            tenant.status === 'Active'
-                              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                              : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-                          }`}>
-                            {tenant.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{tenant.users}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{tenant.createdAt}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{tenant.owner}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            type="button"
-                            className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
-                          >
-                            Edit
-                          </button>
-                        </td>
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Plan
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Users
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Created
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Owner
+                        </th>
+                        <th scope="col" className="relative px-6 py-3">
+                          <span className="sr-only">Actions</span>
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {filteredTenants.map((tenant) => (
+                        <tr key={tenant.id} className={selectedTenants.includes(tenant.id) ? 'bg-primary-50 dark:bg-primary-900/20' : ''}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 dark:text-primary-500 focus:ring-primary-600 dark:focus:ring-primary-500"
+                              checked={selectedTenants.includes(tenant.id)}
+                              onChange={() => handleSelectTenant(tenant.id)}
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-10 w-10 flex-shrink-0">
+                                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-500">
+                                  <span className="text-sm font-medium leading-none text-white">
+                                    {tenant.name.split(' ').map(n => n[0]).join('')}
+                                  </span>
+                                </span>
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">{tenant.name}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{tenant.plan}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              tenant.status === 'Active'
+                                ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                                : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                            }`}>
+                              {tenant.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{tenant.users}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{tenant.createdAt}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{tenant.owner}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                              type="button"
+                              className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               {/* Pagination */}
               <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
