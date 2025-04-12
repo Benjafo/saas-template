@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import EditTenantModal from '../../components/admin/EditTenantModal';
 import apiClient from '../../utils/api';
 
 const TenantsPage = () => {
@@ -9,9 +10,10 @@ const TenantsPage = () => {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTenantId, setEditingTenantId] = useState(null);
   
-  useEffect(() => {
-    const fetchTenants = async () => {
+  const fetchTenants = async () => {
       try {
         setLoading(true);
         const response = await apiClient.get('/admin/tenants');
@@ -47,8 +49,19 @@ const TenantsPage = () => {
       }
     };
     
+  useEffect(() => {
     fetchTenants();
   }, []);
+
+  const handleEditTenant = (tenantId) => {
+    setEditingTenantId(tenantId);
+    setIsEditModalOpen(true);
+  };
+
+  const handleTenantUpdated = () => {
+    // Refresh the tenant list after a successful update
+    fetchTenants();
+  };
 
   // Filter tenants based on search term, status, and plan
   const filteredTenants = tenants.filter((tenant) => {
@@ -266,6 +279,7 @@ const TenantsPage = () => {
                             <button
                               type="button"
                               className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
+                              onClick={() => handleEditTenant(tenant.id)}
                             >
                               Edit
                             </button>
@@ -334,6 +348,13 @@ const TenantsPage = () => {
           </div>
         </div>
       </main>
+      {/* Edit Tenant Modal */}
+      <EditTenantModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        tenantId={editingTenantId}
+        onTenantUpdated={handleTenantUpdated}
+      />
     </div>
   );
 };

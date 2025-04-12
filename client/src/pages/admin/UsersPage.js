@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import EditUserModal from '../../components/admin/EditUserModal';
+import ViewUserModal from '../../components/admin/ViewUserModal';
 import apiClient from '../../utils/api';
-
-console.log('Users page loaded')
 
 const UsersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,11 +11,12 @@ const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  console.log('Users page loaded')
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewingUserId, setViewingUserId] = useState(null);
   
-  useEffect(() => {
-    const fetchUsers = async () => {
+  const fetchUsers = async () => {
       try {
         setLoading(true);
         const response = await apiClient.get('/admin/users');
@@ -52,8 +53,24 @@ const UsersPage = () => {
       }
     };
     
+  useEffect(() => {
     fetchUsers();
   }, []);
+
+  const handleEditUser = (userId) => {
+    setEditingUserId(userId);
+    setIsEditModalOpen(true);
+  };
+
+  const handleViewUser = (userId) => {
+    setViewingUserId(userId);
+    setIsViewModalOpen(true);
+  };
+
+  const handleUserUpdated = () => {
+    // Refresh the user list after a successful update
+    fetchUsers();
+  };
 
   // Filter users based on search term, role, and status
   const filteredUsers = users.filter((user) => {
@@ -237,12 +254,22 @@ const UsersPage = () => {
                             <div className="h-10 w-10 flex-shrink-0">
                               <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-500">
                                 <span className="text-sm font-medium leading-none text-white">
-                                  {user.name.split(' ').map(n => n[0]).join('')}
+                                  {(() => {
+                                    const nameParts = user.name.split(' ').filter(part => part.length > 0);
+                                    if (nameParts.length === 0) return '';
+                                    if (nameParts.length === 1) return nameParts[0][0];
+                                    return nameParts[0][0] + nameParts[nameParts.length - 1][0];
+                                  })()}
                                 </span>
                               </span>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</div>
+                              <div 
+                                className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-primary-600 dark:hover:text-primary-400"
+                                onClick={() => handleViewUser(user.id)}
+                              >
+                                {user.name}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -271,6 +298,7 @@ const UsersPage = () => {
                           <button
                             type="button"
                             className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
+                            onClick={() => handleEditUser(user.id)}
                           >
                             Edit
                           </button>
@@ -339,6 +367,20 @@ const UsersPage = () => {
           </div>
         </div>
       </main>
+      {/* Edit User Modal */}
+      <EditUserModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        userId={editingUserId}
+        onUserUpdated={handleUserUpdated}
+      />
+
+      {/* View User Modal */}
+      <ViewUserModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        userId={viewingUserId}
+      />
     </div>
   );
 };
