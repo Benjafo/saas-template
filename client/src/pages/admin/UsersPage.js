@@ -15,12 +15,19 @@ const UsersPage = () => {
   const [editingUserId, setEditingUserId] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingUserId, setViewingUserId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   
   const fetchUsers = async () => {
       try {
         setLoading(true);
         const response = await apiClient.get('/admin/users');
-        console.log('Users list: ', response)
+        console.log('Users list: ', response);
+        
+        // Log the first user to inspect the structure
+        if (response.data.data.users.length > 0) {
+          console.log('First user data structure:', response.data.data.users[0]);
+        }
         
         // Transform the API response to match the expected format
         const formattedUsers = response.data.data.users.map(user => {
@@ -32,13 +39,22 @@ const UsersPage = () => {
             year: 'numeric' 
           });
           
+          // Determine user status from subscription status
+          let isActive = false;
+          if (user.subscription && user.subscription.status) {
+            isActive = ['active', 'trialing'].includes(user.subscription.status.toLowerCase());
+          }
+          
+          // Use tenant ID as tenant name for now
+          let tenantName = user.tenantId ? user.tenantId : 'N/A';
+          
           return {
             id: user._id,
             name: user.name,
             email: user.email,
             role: user.role.charAt(0).toUpperCase() + user.role.slice(1), // Capitalize role
-            status: user.active ? 'Active' : 'Inactive',
-            tenantName: user.tenantId ? user.tenantId.name : 'N/A',
+            status: isActive ? 'Active' : 'Inactive',
+            tenantName: tenantName,
             lastLogin
           };
         });
@@ -84,6 +100,31 @@ const UsersPage = () => {
     
     return matchesSearch && matchesRole && matchesStatus;
   });
+
+  // Get current users for pagination
+  const indexOfLastUser = currentPage * itemsPerPage;
+  const indexOfFirstUser = indexOfLastUser - itemsPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  
+  // Go to next page
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  
+  // Go to previous page
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -239,7 +280,7 @@ const UsersPage = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {filteredUsers.map((user) => (
+                    {currentUsers.map((user) => (
                       <tr key={user.id} className={selectedUsers.includes(user.id) ? 'bg-primary-50 dark:bg-primary-900/20' : ''}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <input
@@ -316,12 +357,16 @@ const UsersPage = () => {
                   <button
                     type="button"
                     className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    onClick={prevPage}
+                    disabled={currentPage === 1}
                   >
                     Previous
                   </button>
                   <button
                     type="button"
                     className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    onClick={nextPage}
+                    disabled={currentPage === totalPages}
                   >
                     Next
                   </button>
@@ -329,7 +374,10 @@ const UsersPage = () => {
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Showing <span className="font-medium">1</span> to <span className="font-medium">10</span> of{' '}
+                      Showing <span className="font-medium">{indexOfFirstUser + 1}</span> to{' '}
+                      <span className="font-medium">
+                        {Math.min(indexOfLastUser, filteredUsers.length)}
+                      </span> of{' '}
                       <span className="font-medium">{filteredUsers.length}</span> results
                     </p>
                   </div>
@@ -338,21 +386,33 @@ const UsersPage = () => {
                       <button
                         type="button"
                         className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        onClick={prevPage}
+                        disabled={currentPage === 1}
                       >
                         <span className="sr-only">Previous</span>
                         <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
                         </svg>
                       </button>
-                      <button
-                        type="button"
-                        className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
-                      >
-                        1
-                      </button>
+                      {[...Array(totalPages).keys()].map((number) => (
+                        <button
+                          key={number + 1}
+                          type="button"
+                          onClick={() => paginate(number + 1)}
+                          className={`relative inline-flex items-center px-4 py-2 border ${
+                            currentPage === number + 1
+                              ? 'bg-primary-50 dark:bg-primary-900 border-primary-500 dark:border-primary-500 text-primary-600 dark:text-primary-400'
+                              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                          } text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600`}
+                        >
+                          {number + 1}
+                        </button>
+                      ))}
                       <button
                         type="button"
                         className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        onClick={nextPage}
+                        disabled={currentPage === totalPages}
                       >
                         <span className="sr-only">Next</span>
                         <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

@@ -100,35 +100,36 @@ const AdminDashboardPage = () => {
             
             return stat;
           });
-        } else {
-          // Use default stats with real data where available
-          statsData = [
-            { 
-              name: 'Total Users', 
-              value: dashboardStats?.users?.total?.toLocaleString() || '0', 
-              change: `+${dashboardStats?.users?.growth || 0}%`, 
-              changeType: 'increase' 
-            },
-            { 
-              name: 'Active Tenants', 
-              value: dashboardStats?.tenants?.active?.toLocaleString() || '0', 
-              change: `+${dashboardStats?.tenants?.growth || 0}%`, 
-              changeType: 'increase' 
-            },
-            { 
-              name: 'Revenue (MTD)', 
-              value: `$${dashboardStats?.revenue?.monthly?.toLocaleString() || '0'}`, 
-              change: `+${dashboardStats?.revenue?.growth || 0}%`, 
-              changeType: 'increase' 
-            },
-            { 
-              name: 'Churn Rate', 
-              value: '3.2%', 
-              change: '-0.4%', 
-              changeType: 'decrease' 
-            },
-          ];
         }
+        // } else {
+        //   // Use default stats with real data where available
+        //   statsData = [
+        //     { 
+        //       name: 'Total Users', 
+        //       value: dashboardStats?.users?.total?.toLocaleString() || '0', 
+        //       change: `+${dashboardStats?.users?.growth || 0}%`, 
+        //       changeType: 'increase' 
+        //     },
+        //     { 
+        //       name: 'Active Tenants', 
+        //       value: dashboardStats?.tenants?.active?.toLocaleString() || '0', 
+        //       change: `+${dashboardStats?.tenants?.growth || 0}%`, 
+        //       changeType: 'increase' 
+        //     },
+        //     { 
+        //       name: 'Revenue (MTD)', 
+        //       value: `$${dashboardStats?.revenue?.monthly?.toLocaleString() || '0'}`, 
+        //       change: `+${dashboardStats?.revenue?.growth || 0}%`, 
+        //       changeType: 'increase' 
+        //     },
+        //     { 
+        //       name: 'Churn Rate', 
+        //       value: '3.2%', 
+        //       change: '-0.4%', 
+        //       changeType: 'decrease' 
+        //     },
+        //   ];
+        // }
         
         setStats(statsData);
         setLoading(false);
