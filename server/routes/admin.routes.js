@@ -15,6 +15,7 @@ router.get('/users/growth', adminController.getUserGrowthStats);
 router.get('/subscriptions/distribution', adminController.getSubscriptionDistribution);
 
 // User management
+router.post('/users', adminController.createUser);
 router.get('/users', adminController.getAllUsers);
 router.get('/users/:id', adminController.getUser);
 router.patch('/users/:id', adminController.updateUser);
@@ -22,6 +23,7 @@ router.delete('/users/:id', adminController.deleteUser);
 router.post('/users/:id/impersonate', adminController.impersonateUser);
 
 // Tenant management
+router.post('/tenants', adminController.createTenant);
 router.get('/tenants', adminController.getAllTenants);
 router.get('/tenants/:id', adminController.getTenant);
 router.patch('/tenants/:id', adminController.updateTenant);
@@ -29,7 +31,9 @@ router.delete('/tenants/:id', adminController.deleteTenant);
 router.post('/tenants/:id/status', adminController.updateTenantStatus);
 
 // Subscription management
+router.post('/subscriptions', adminController.createSubscription);
 router.get('/subscriptions', adminController.getAllSubscriptions);
+router.get('/subscriptions/:id', adminController.getSubscription);
 router.patch('/subscriptions/:id', adminController.updateSubscription);
 router.post('/subscriptions/:id/override', adminController.overrideSubscription);
 

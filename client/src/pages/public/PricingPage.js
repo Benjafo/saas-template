@@ -242,7 +242,7 @@ const PricingPage = () => {
                 >
                   {tier.mostPopular ? 'Start free trial' : 'Get started'}
                 </Link>
-                <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600 dark:text-gray-300">
+                <ul className="mt-8 space-y-3 text-sm leading-6 text-gray-600 dark:text-gray-300">
                   {tier.features.map((feature) => (
                     <li key={feature} className="flex gap-x-3">
                       <svg className="h-6 w-5 flex-none text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true">

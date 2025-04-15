@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import AddUserModal from '../../components/admin/AddUserModal';
 import EditUserModal from '../../components/admin/EditUserModal';
 import ViewUserModal from '../../components/admin/ViewUserModal';
 import apiClient from '../../utils/api';
@@ -15,6 +16,7 @@ const UsersPage = () => {
   const [editingUserId, setEditingUserId] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingUserId, setViewingUserId] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   
@@ -85,6 +87,11 @@ const UsersPage = () => {
 
   const handleUserUpdated = () => {
     // Refresh the user list after a successful update
+    fetchUsers();
+  };
+  
+  const handleUserAdded = () => {
+    // Refresh the user list after a successful addition
     fetchUsers();
   };
 
@@ -207,6 +214,7 @@ const UsersPage = () => {
                     <button
                       type="button"
                       className="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                      onClick={() => setIsAddModalOpen(true)}
                     >
                       <svg className="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
@@ -440,6 +448,13 @@ const UsersPage = () => {
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
         userId={viewingUserId}
+      />
+      
+      {/* Add User Modal */}
+      <AddUserModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onUserAdded={handleUserAdded}
       />
     </div>
   );

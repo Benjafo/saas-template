@@ -55,7 +55,7 @@ const authenticate = async (req, res, next) => {
     }
 
     // GRANT ACCESS TO PROTECTED ROUTE
-    console.log('Authentication successful for user:', currentUser.email);
+    // console.log('Authentication successful for user:', currentUser.email);
     req.user = currentUser;
     next();
   } catch (err) {

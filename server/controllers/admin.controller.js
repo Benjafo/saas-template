@@ -196,6 +196,26 @@ exports.getSubscriptionDistribution = async (req, res, next) => {
 };
 
 /**
+ * Create a new user
+ * @route POST /api/v1/admin/users
+ * @protected @admin
+ */
+exports.createUser = async (req, res, next) => {
+  try {
+    const newUser = await User.create(req.body);
+
+    res.status(201).json({
+      status: 'success',
+      data: {
+        user: newUser
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Get all users
  * @route GET /api/v1/admin/users
  * @protected @admin
@@ -332,6 +352,26 @@ exports.impersonateUser = async (req, res, next) => {
       data: {
         token,
         user
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Create a new tenant
+ * @route POST /api/v1/admin/tenants
+ * @protected @admin
+ */
+exports.createTenant = async (req, res, next) => {
+  try {
+    const newTenant = await Tenant.create(req.body);
+
+    res.status(201).json({
+      status: 'success',
+      data: {
+        tenant: newTenant
       }
     });
   } catch (err) {
@@ -490,6 +530,47 @@ exports.updateTenantStatus = async (req, res, next) => {
 };
 
 /**
+ * Create a new subscription
+ * @route POST /api/v1/admin/subscriptions
+ * @protected @admin
+ */
+exports.createSubscription = async (req, res, next) => {
+  try {
+    const { userId, plan, status, startDate, endDate, seats } = req.body;
+    
+    // Find the user
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No user found with that ID'
+      });
+    }
+    
+    // Update the user's subscription
+    user.subscription = {
+      plan,
+      status,
+      startDate,
+      endDate,
+      seats
+    };
+    
+    await user.save({ validateBeforeSave: false });
+    
+    res.status(201).json({
+      status: 'success',
+      data: {
+        subscription: user.subscription
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Get all subscriptions
  * @route GET /api/v1/admin/subscriptions
  * @protected @admin
@@ -508,6 +589,33 @@ exports.getAllSubscriptions = async (req, res, next) => {
           email: user.email,
           subscription: user.subscription
         }))
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Get a specific subscription
+ * @route GET /api/v1/admin/subscriptions/:id
+ * @protected @admin
+ */
+exports.getSubscription = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No user found with that ID'
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        subscription: user.subscription
       }
     });
   } catch (err) {

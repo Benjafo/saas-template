@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import AddSubscriptionModal from '../../components/admin/AddSubscriptionModal';
+import EditSubscriptionModal from '../../components/admin/EditSubscriptionModal';
 import apiClient from '../../utils/api';
 
 const SubscriptionsPage = () => {
@@ -9,65 +11,87 @@ const SubscriptionsPage = () => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingSubscriptionId, setEditingSubscriptionId] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   
-  useEffect(() => {
-    const fetchSubscriptions = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.get('/admin/subscriptions');
-        
-        // Transform the API response to match the expected format
-        const formattedSubscriptions = response.data.data.subscriptions.map(sub => {
-          // Format the dates to match the expected format
-          const startDate = sub.subscription?.startDate ? new Date(sub.subscription.startDate) : new Date();
-          const formattedStartDate = startDate.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
-          });
-          
-          const endDate = sub.subscription?.endDate ? new Date(sub.subscription.endDate) : null;
-          const formattedEndDate = endDate 
-            ? endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-            : 'N/A';
-          
-          // Determine amount based on plan
-          let amount = '$0.00';
-          let billingCycle = 'N/A';
-          
-          if (sub.subscription?.plan === 'professional' || sub.subscription?.plan === 'pro') {
-            amount = '$49.00';
-            billingCycle = 'Monthly';
-          } else if (sub.subscription?.plan === 'enterprise') {
-            amount = '$999.00';
-            billingCycle = 'Annual';
-          }
-          
-          return {
-            id: sub.userId,
-            tenantName: sub.name || 'Unknown',
-            plan: sub.subscription?.plan?.charAt(0).toUpperCase() + sub.subscription?.plan?.slice(1) || 'Free',
-            status: sub.subscription?.status?.charAt(0).toUpperCase() + sub.subscription?.status?.slice(1) || 'Inactive',
-            startDate: formattedStartDate,
-            endDate: formattedEndDate,
-            amount,
-            billingCycle,
-            paymentMethod: sub.subscription?.paymentMethod || 'N/A'
-          };
+  // Function to fetch subscriptions data
+  const fetchSubscriptions = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get('/admin/subscriptions');
+      
+      // Transform the API response to match the expected format
+      const formattedSubscriptions = response.data.data.subscriptions.map(sub => {
+        // Format the dates to match the expected format
+        const startDate = sub.subscription?.startDate ? new Date(sub.subscription.startDate) : new Date();
+        const formattedStartDate = startDate.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
         });
         
-        setSubscriptions(formattedSubscriptions);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching subscriptions:', err);
-        setError('Failed to load subscriptions. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
+        const endDate = sub.subscription?.endDate ? new Date(sub.subscription.endDate) : null;
+        const formattedEndDate = endDate 
+          ? endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          : 'N/A';
+        
+        // Determine amount based on plan
+        let amount = '$0.00';
+        let billingCycle = 'N/A';
+        
+        if (sub.subscription?.plan === 'professional' || sub.subscription?.plan === 'pro') {
+          amount = '$49.00';
+          billingCycle = 'Monthly';
+        } else if (sub.subscription?.plan === 'enterprise') {
+          amount = '$999.00';
+          billingCycle = 'Annual';
+        }
+        
+        return {
+          id: sub.userId,
+          tenantName: sub.name || 'Unknown',
+          plan: sub.subscription?.plan?.charAt(0).toUpperCase() + sub.subscription?.plan?.slice(1) || 'Free',
+          status: sub.subscription?.status?.charAt(0).toUpperCase() + sub.subscription?.status?.slice(1) || 'Inactive',
+          startDate: formattedStartDate,
+          endDate: formattedEndDate,
+          amount,
+          billingCycle,
+          paymentMethod: sub.subscription?.paymentMethod || 'N/A'
+        };
+      });
+      
+      setSubscriptions(formattedSubscriptions);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching subscriptions:', err);
+      setError('Failed to load subscriptions. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Fetch subscriptions on component mount
+  useEffect(() => {
     fetchSubscriptions();
   }, []);
+
+  const handleEditSubscription = (subscriptionId) => {
+    setEditingSubscriptionId(subscriptionId);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSubscriptionUpdated = () => {
+    // Refresh the subscription list after a successful update
+    fetchSubscriptions();
+  };
+  
+  const handleSubscriptionAdded = () => {
+    // Refresh the subscription list after a successful addition
+    fetchSubscriptions();
+  };
 
   // Filter subscriptions based on search term, status, and plan
   const filteredSubscriptions = subscriptions.filter((subscription) => {
@@ -79,6 +103,31 @@ const SubscriptionsPage = () => {
     
     return matchesSearch && matchesStatus && matchesPlan;
   });
+  
+  // Get current subscriptions for pagination
+  const indexOfLastSubscription = currentPage * itemsPerPage;
+  const indexOfFirstSubscription = indexOfLastSubscription - itemsPerPage;
+  const currentSubscriptions = filteredSubscriptions.slice(indexOfFirstSubscription, indexOfLastSubscription);
+  
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredSubscriptions.length / itemsPerPage);
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  
+  // Go to next page
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  
+  // Go to previous page
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -156,12 +205,16 @@ const SubscriptionsPage = () => {
                       >
                         <option value="all">All Status</option>
                         <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
+                        <option value="trialing">Trialing</option>
+                        <option value="past_due">Past Due</option>
+                        <option value="canceled">Canceled</option>
+                        {/* <option value="inactive">Inactive</option> */}
                       </select>
                     </div>
                     <button
                       type="button"
                       className="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                      onClick={() => setIsAddModalOpen(true)}
                     >
                       <svg className="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
@@ -238,7 +291,7 @@ const SubscriptionsPage = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {filteredSubscriptions.map((subscription) => (
+                      {currentSubscriptions.map((subscription) => (
                         <tr key={subscription.id} className={selectedSubscriptions.includes(subscription.id) ? 'bg-primary-50 dark:bg-primary-900/20' : ''}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input
@@ -279,6 +332,7 @@ const SubscriptionsPage = () => {
                             <button
                               type="button"
                               className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
+                              onClick={() => handleEditSubscription(subscription.id)}
                             >
                               Edit
                             </button>
@@ -296,12 +350,16 @@ const SubscriptionsPage = () => {
                   <button
                     type="button"
                     className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    onClick={prevPage}
+                    disabled={currentPage === 1}
                   >
                     Previous
                   </button>
                   <button
                     type="button"
                     className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    onClick={nextPage}
+                    disabled={currentPage === totalPages}
                   >
                     Next
                   </button>
@@ -309,7 +367,10 @@ const SubscriptionsPage = () => {
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Showing <span className="font-medium">1</span> to <span className="font-medium">10</span> of{' '}
+                      Showing <span className="font-medium">{indexOfFirstSubscription + 1}</span> to{' '}
+                      <span className="font-medium">
+                        {Math.min(indexOfLastSubscription, filteredSubscriptions.length)}
+                      </span> of{' '}
                       <span className="font-medium">{filteredSubscriptions.length}</span> results
                     </p>
                   </div>
@@ -318,21 +379,33 @@ const SubscriptionsPage = () => {
                       <button
                         type="button"
                         className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        onClick={prevPage}
+                        disabled={currentPage === 1}
                       >
                         <span className="sr-only">Previous</span>
                         <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
                         </svg>
                       </button>
-                      <button
-                        type="button"
-                        className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
-                      >
-                        1
-                      </button>
+                      {[...Array(totalPages).keys()].map((number) => (
+                        <button
+                          key={number + 1}
+                          type="button"
+                          onClick={() => paginate(number + 1)}
+                          className={`relative inline-flex items-center px-4 py-2 border ${
+                            currentPage === number + 1
+                              ? 'bg-primary-50 dark:bg-primary-900 border-primary-500 dark:border-primary-500 text-primary-600 dark:text-primary-400'
+                              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                          } text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600`}
+                        >
+                          {number + 1}
+                        </button>
+                      ))}
                       <button
                         type="button"
                         className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        onClick={nextPage}
+                        disabled={currentPage === totalPages}
                       >
                         <span className="sr-only">Next</span>
                         <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -347,6 +420,21 @@ const SubscriptionsPage = () => {
           </div>
         </div>
       </main>
+      
+      {/* Edit Subscription Modal */}
+      <EditSubscriptionModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        subscriptionId={editingSubscriptionId}
+        onSubscriptionUpdated={handleSubscriptionUpdated}
+      />
+      
+      {/* Add Subscription Modal */}
+      <AddSubscriptionModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubscriptionAdded={handleSubscriptionAdded}
+      />
     </div>
   );
 };

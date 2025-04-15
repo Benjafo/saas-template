@@ -41,8 +41,8 @@ app.use(cors({
           'http://client:3000'
         ];
         
-        console.log('CORS request from origin:', origin);
-        console.log('Allowed origins:', allowedOrigins);
+        // console.log('CORS request from origin:', origin);
+        // console.log('Allowed origins:', allowedOrigins);
         
         if(allowedOrigins.indexOf(origin) !== -1 || !origin) {
           callback(null, true);

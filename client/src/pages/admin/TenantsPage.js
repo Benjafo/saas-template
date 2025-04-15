@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import AddTenantModal from '../../components/admin/AddTenantModal';
 import EditTenantModal from '../../components/admin/EditTenantModal';
 import apiClient from '../../utils/api';
 
@@ -12,6 +13,7 @@ const TenantsPage = () => {
   const [error, setError] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTenantId, setEditingTenantId] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   
   const fetchTenants = async () => {
       try {
@@ -60,6 +62,11 @@ const TenantsPage = () => {
 
   const handleTenantUpdated = () => {
     // Refresh the tenant list after a successful update
+    fetchTenants();
+  };
+  
+  const handleTenantAdded = () => {
+    // Refresh the tenant list after a successful addition
     fetchTenants();
   };
 
@@ -157,6 +164,7 @@ const TenantsPage = () => {
                     <button
                       type="button"
                       className="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                      onClick={() => setIsAddModalOpen(true)}
                     >
                       <svg className="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
@@ -310,7 +318,7 @@ const TenantsPage = () => {
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Showing <span className="font-medium">1</span> to <span className="font-medium">10</span> of{' '}
+                      Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredTenants.length < 10 ? filteredTenants.length : 10}</span> of{' '}
                       <span className="font-medium">{filteredTenants.length}</span> results
                     </p>
                   </div>
@@ -354,6 +362,13 @@ const TenantsPage = () => {
         onClose={() => setIsEditModalOpen(false)}
         tenantId={editingTenantId}
         onTenantUpdated={handleTenantUpdated}
+      />
+      
+      {/* Add Tenant Modal */}
+      <AddTenantModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onTenantAdded={handleTenantAdded}
       />
     </div>
   );

@@ -12,6 +12,23 @@ const ViewUserModal = ({ isOpen, onClose, userId }) => {
       fetchUserData();
     }
   }, [isOpen, userId]);
+  
+  // Add event listener for Escape key
+  useEffect(() => {
+    const handleEscapeKey = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
 
   const fetchUserData = async () => {
     try {

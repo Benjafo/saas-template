@@ -194,7 +194,7 @@ const SubscriptionPage = () => {
                       </div>
                       <div className="mt-6">
                         <h4 className="text-sm font-medium text-gray-900 dark:text-white">Included features</h4>
-                        <ul role="list" className="mt-2 space-y-2 text-sm text-gray-500 dark:text-gray-400">
+                        <ul className="mt-2 space-y-2 text-sm text-gray-500 dark:text-gray-400">
                           {plan.features.map((feature) => (
                             <li key={feature} className="flex items-start">
                               <svg className="h-5 w-5 flex-shrink-0 text-green-500 dark:text-green-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
